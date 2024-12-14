@@ -1,0 +1,35 @@
+<html>
+<script src="https://bossanova.uk/jspreadsheet/v4/jexcel.js"></script>
+<script src="https://jsuites.net/v4/jsuites.js"></script>
+<script src="./japanese_customeditor.js"></script>
+<link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v4/jexcel.css" type="text/css" />
+<link rel="stylesheet" href="https://jsuites.net/v4/jsuites.css" type="text/css" />
+ 
+<div id="spreadsheet" style="margin:50px"></div>
+<script>
+var data = [
+	['Jazz', 'Honda', '2019-02-12', '', true, '$ 2.000,00'],
+	['Civic', 'Honda', '2018-07-11', '', true, '$ 4.000,01'],
+];
+for (let i=0; i< 100; i++) data.push([]);
+jspreadsheet(document.getElementById('spreadsheet'), {
+	data: data,
+	columns: [
+		{ type: 'text', title:'A', width:170, editor: customColumn },
+		{ type: 'text', title:'B', width:150, editor: customColumn },
+		{ type: 'text', title:'C', width:120, editor: customColumn },
+		{ type: 'text', title:'D', width:180, editor: customColumn },
+		{ type: 'text', title:'標準', width:150 },
+		{ type: 'text', title:'F', width:200, editor: customColumn },
+	],
+	tableOverflow:true,
+	tableHeight:'600px',
+	tableWidth:'1000px',
+	freezeColumns: 2,
+	fullscreen:false,
+	rowResize:true,
+});
+// カスタムエディタのセットアップ
+setupCustomEditor();
+</script>
+</html>
