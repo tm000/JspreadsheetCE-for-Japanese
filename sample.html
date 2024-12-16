@@ -15,12 +15,12 @@ for (let i=0; i< 100; i++) data.push([]);
 jspreadsheet(document.getElementById('spreadsheet'), {
 	data: data,
 	columns: [
-		{ type: 'text', title:'A', width:170, editor: customColumn },
-		{ type: 'text', title:'B', width:150, editor: customColumn },
-		{ type: 'text', title:'C', width:120, editor: customColumn },
-		{ type: 'text', title:'D', width:180, editor: customColumn },
+		{ type: 'text', title:'A', width:170, editor: customEditor },
+		{ type: 'text', title:'B', width:150, editor: customEditor },
+		{ type: 'text', title:'C', width:120, editor: customEditor },
+		{ type: 'text', title:'D', width:180, editor: customEditor },
 		{ type: 'text', title:'標準', width:150 },
-		{ type: 'text', title:'F', width:200, editor: customColumn },
+		{ type: 'text', title:'F', width:200, editor: customEditor },
 	],
 	tableOverflow:true,
 	tableHeight:'600px',
@@ -30,6 +30,6 @@ jspreadsheet(document.getElementById('spreadsheet'), {
 	rowResize:true,
 });
 // カスタムエディタのセットアップ
-setupCustomEditor();
+setupJapaneseCustomEditor();
 </script>
 </html>
