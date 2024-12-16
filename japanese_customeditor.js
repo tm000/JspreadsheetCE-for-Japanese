@@ -243,13 +243,13 @@ function updateEditorPosition() {
 }
 
 function updateEditorSize(x, y) {
-	let cornerCell = document.getElementsByClassName('jexcel_selectall')[0].getBoundingClientRect();
+	let cornerCell = jexcel.current.headerContainer.children[0].getBoundingClientRect();
 	let cell = jexcel.current.getCellFromCoords(x, y)
 	let info = cell.getBoundingClientRect();
 	editor.style.minWidth = (info.width) + 'px';
 	editor.style.minHeight = (info.height) + 'px';
 	const scrollTop = jexcel.current.content.scrollTop;
-	const scrollLeft = jexcel.current.content.scrollLeft;
+	const scrollLeft = jexcel.current.content.scrollLeft + (document.documentElement.scrollLeft || document.body.scrollLeft);
 	editor.style.top = info.top - cornerCell.top + scrollTop;
 	if (cornerCell.left >= 0) {
 		editor.style.left = info.left - cornerCell.left;
@@ -297,9 +297,9 @@ function setupCustomEditor() {
 	};
 
 	// エディタをspreadsheetの一部として追加
-	document.getElementsByClassName('jexcel_content')[0].appendChild(editor);
+	jexcel.current.content.appendChild(editor);
 	// 列幅、行高さ変更時、editorの大きさを再設定する
-	document.getElementsByClassName('jexcel_content')[0].addEventListener('mousemove', (e) => {
+	jexcel.current.content.addEventListener('mousemove', (e) => {
 		if (jexcel.isMouseAction == true) {
 	        // Resizing is ongoing
 	        if (jexcel.current.resizing) {
@@ -310,13 +310,13 @@ function setupCustomEditor() {
 		}
 	});
 	// コーナーの位置を保持
-	cornerLeft = document.getElementsByClassName('jexcel_selectall')[0].getBoundingClientRect().left;
+	cornerLeft = jexcel.current.headerContainer.children[0].getBoundingClientRect().left + (document.documentElement.scrollLeft || document.body.scrollLeft);
 	// スクロール時、editorの位置を再設定する
-	document.getElementsByClassName('jexcel_content')[0].addEventListener('scroll', (e) => {
+	jexcel.current.content.addEventListener('scroll', (e) => {
 		let x = editor.getAttribute('data-x');
 		let y = editor.getAttribute('data-y');
 		updateEditorSize(x, y);
 	});
-	// Windowサイズ変更時にeditorの位置を補正
-	window.addEventListener("resize", (e) => updateEditorPosition());
+	// spreadsheetのサイズ変更時にeditorの位置を補正
+	jexcel.current.content.addEventListener("resize", (e) => updateEditorPosition());
 }
