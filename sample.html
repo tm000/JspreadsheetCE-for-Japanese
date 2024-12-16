@@ -15,12 +15,12 @@ for (let i=0; i< 100; i++) data.push([]);
 jspreadsheet(document.getElementById('spreadsheet'), {
 	data: data,
 	columns: [
-		{ type: 'text', title:'A', width:170, editor: customEditor },
-		{ type: 'text', title:'B', width:150, editor: customEditor },
-		{ type: 'text', title:'C', width:120, editor: customEditor },
-		{ type: 'text', title:'D', width:180, editor: customEditor },
+		{ type: 'text', title:'A', width:170, editor: japaneseCustomEditor },
+		{ type: 'text', title:'B', width:150, editor: japaneseCustomEditor },
+		{ type: 'text', title:'C', width:120, editor: japaneseCustomEditor },
+		{ type: 'text', title:'D', width:180, editor: japaneseCustomEditor },
 		{ type: 'text', title:'標準', width:150 },
-		{ type: 'text', title:'F', width:200, editor: customEditor },
+		{ type: 'text', title:'F', width:200, editor: japaneseCustomEditor },
 	],
 	tableOverflow:true,
 	tableHeight:'600px',
