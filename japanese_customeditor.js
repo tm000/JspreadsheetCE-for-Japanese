@@ -315,6 +315,7 @@ function setupJapaneseCustomEditor() {
 	jexcel.current.content.addEventListener('scroll', (e) => {
 		let x = editor.getAttribute('data-x');
 		let y = editor.getAttribute('data-y');
+		if (x == undefined || y == undefined) return;
 		updateEditorSize(x, y);
 	});
 	// spreadsheetのサイズ変更時にeditorの位置を補正
