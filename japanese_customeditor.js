@@ -7,7 +7,7 @@ editor.style.outline = 'none';
 editor.style.display = 'none';
 
 // カスタムエディタを定義
-var customColumn = {
+var customEditor = {
 	closeEditor : function(cell, save) {
 		let value = save ? editor.innerText : cell.innerText;
 		cell.style.color = '';
