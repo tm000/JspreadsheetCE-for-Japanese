@@ -260,6 +260,7 @@ function updateEditorSize(x, y) {
 }
 
 function setupJapaneseCustomEditor() {
+	if (typeof jexcel === 'undefined') jexcel = jspreadsheet;
 	jexcel.current.options['onselection'] = function(e,x,y,x2,y2) {
 		if (oldcell) {
 			// 以前に選択していたセルの後処理
