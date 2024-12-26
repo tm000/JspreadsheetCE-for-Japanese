@@ -214,6 +214,21 @@ editor.addEventListener('blur', (e) => {
 	let cell = jexcel.current.getCellFromCoords(x, y)
 	jexcel.current.closeEditor(cell, true);
 });
+editor.addEventListener('touchstart', (e) => {
+	if (jexcel.current) {
+		if (! jexcel.current.edition) {
+			let x = editor.getAttribute('data-x');
+			let y = editor.getAttribute('data-y');
+			let cell = jexcel.current.getCellFromCoords(x, y)
+
+			if (x && y) {
+				jexcel.timeControl = setTimeout(function() {
+					jexcel.current.openEditor(cell, false, e);
+				}, 500);
+			}
+		}
+	}
+});
 
 function updateEditorPosition() {
 	if (!jexcel.current) return;
