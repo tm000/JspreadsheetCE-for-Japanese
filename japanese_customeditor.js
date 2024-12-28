@@ -13,7 +13,7 @@ var japaneseCustomEditor = {
 		cell.style.color = '';
 		cell.style.caretColor = 'transparent';
 		editor.innerText = '';
-		editor.display = 'none';
+		editor.style.caretColor = 'transparent';
 		editing = false;
 		return value;
 	},
@@ -22,7 +22,10 @@ var japaneseCustomEditor = {
 		// カスタムエディタではcellに何らかの子要素を追加する必要があるのでとりあえずdivを追加
 		let div = document.createElement('div');
 		cell.appendChild(div);
-		cell.style.caretColor = 'transparent';
+		editing = true;
+		editor.innerText = cell.innerText;
+		editor.style.caretColor = 'black';
+		cell.style.color = 'transparent';
 		editor.focus();
 	},
 	getValue : function(cell) {
@@ -229,6 +232,18 @@ editor.addEventListener('touchstart', (e) => {
 		}
 	}
 });
+editor.addEventListener('touchend', (e) => {
+	if (jexcel.timeControl) {
+		jexcel.timeControl = null;
+		jexcel.tmpElement = null;
+	}
+});
+editor.addEventListener('touchcancel', (e) => {
+	if (jexcel.timeControl) {
+		jexcel.timeControl = null;
+		jexcel.tmpElement = null;
+	}
+});
 
 function updateEditorPosition() {
 	if (!jexcel.current) return;
@@ -276,6 +291,28 @@ function updateEditorSize(x, y) {
 
 function setupJapaneseCustomEditor() {
 	if (typeof jexcel === 'undefined') jexcel = jspreadsheet;
+	// 既定のtouchイベントを非カスタムエディタ用にする
+	document.removeEventListener("touchstart", jexcel.touchStartControls);
+	document.removeEventListener("touchend", jexcel.touchEndControls);
+	document.removeEventListener("touchcancel", jexcel.touchEndControls);
+	var ignoreCustmnEditor = (handler) => (e) => {
+		if (jexcel.current && !jexcel.current.edition) {
+			if (jexcel.current.options && jexcel.current.options.columns) {
+				var column = jexcel.current.options.columns[e.target.getAttribute('data-x')];
+				if (column && !column.editor) {
+					// カスタムエディタのセルでない場合、handler実行
+					handler(e);
+				}
+			}
+		}
+	};
+	document.addEventListener("touchstart", ignoreCustmnEditor(jexcel.touchStartControls));
+	document.addEventListener("touchend", ignoreCustmnEditor(jexcel.touchEndControls));
+	document.addEventListener("touchcancel", ignoreCustmnEditor(jexcel.touchEndControls));
+	// onscrollも非カスタムエディタ用にする
+	var defaultonscroll = jexcel.current.content.onscroll;
+	jexcel.current.content.onscroll = ignoreCustmnEditor(defaultonscroll);
+
 	jexcel.current.options['onselection'] = function(e,x,y,x2,y2) {
 		if (oldcell) {
 			// 以前に選択していたセルの後処理
