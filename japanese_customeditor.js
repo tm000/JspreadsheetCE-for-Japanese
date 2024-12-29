@@ -22,10 +22,10 @@ var japaneseCustomEditor = {
 		// カスタムエディタではcellに何らかの子要素を追加する必要があるのでとりあえずdivを追加
 		let div = document.createElement('div');
 		cell.appendChild(div);
-		editing = true;
+		cell.style.color = 'transparent';
 		editor.innerText = cell.innerText;
 		editor.style.caretColor = 'black';
-		cell.style.color = 'transparent';
+		editing = true;
 		editor.focus();
 	},
 	getValue : function(cell) {
@@ -225,6 +225,7 @@ editor.addEventListener('touchstart', (e) => {
 			let cell = jexcel.current.getCellFromCoords(x, y)
 
 			if (x && y) {
+				jexcel.current.updateSelectionFromCoords(x, y);
 				jexcel.timeControl = setTimeout(function() {
 					jexcel.current.openEditor(cell, false, e);
 				}, 500);
@@ -234,12 +235,14 @@ editor.addEventListener('touchstart', (e) => {
 });
 editor.addEventListener('touchend', (e) => {
 	if (jexcel.timeControl) {
+		clearTimeout(jexcel.timeControl);
 		jexcel.timeControl = null;
 		jexcel.tmpElement = null;
 	}
 });
 editor.addEventListener('touchcancel', (e) => {
 	if (jexcel.timeControl) {
+		clearTimeout(jexcel.timeControl);
 		jexcel.timeControl = null;
 		jexcel.tmpElement = null;
 	}
@@ -309,9 +312,6 @@ function setupJapaneseCustomEditor() {
 	document.addEventListener("touchstart", ignoreCustmnEditor(jexcel.touchStartControls));
 	document.addEventListener("touchend", ignoreCustmnEditor(jexcel.touchEndControls));
 	document.addEventListener("touchcancel", ignoreCustmnEditor(jexcel.touchEndControls));
-	// onscrollも非カスタムエディタ用にする
-	var defaultonscroll = jexcel.current.content.onscroll;
-	jexcel.current.content.onscroll = ignoreCustmnEditor(defaultonscroll);
 
 	jexcel.current.options['onselection'] = function(e,x,y,x2,y2) {
 		if (oldcell) {
@@ -339,6 +339,7 @@ function setupJapaneseCustomEditor() {
 		editor.setAttribute('data-x', x);
 		editor.setAttribute('data-y', y);
 		editor.style.caretColor = 'transparent';
+		document.getSelection().removeAllRanges();
 		setTimeout(() => {
 			editor.focus();
 		}, 1);
