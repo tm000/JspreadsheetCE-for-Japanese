@@ -339,7 +339,7 @@ function setupJapaneseCustomEditor() {
 		editor.setAttribute('data-x', x);
 		editor.setAttribute('data-y', y);
 		editor.style.caretColor = 'transparent';
-		document.getSelection().removeAllRanges();
+		document.getSelection().collapse(editor);
 		setTimeout(() => {
 			editor.focus();
 		}, 1);
