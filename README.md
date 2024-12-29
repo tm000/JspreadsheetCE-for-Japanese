@@ -9,7 +9,7 @@ Pro版であればこの問題は発生しないが、無料のJspreadsheet CE�
 <script src="./japanese_customeditor.js"></script>
 ```
 
-2. jspreadsheetのcolumnsの定義でeditorにjapaneseCustomEditorを指定する。そのあとsetupJapaneseCustomEditor関数を呼び出す。
+2. jspreadsheetのcolumnsの定義でeditorにjapaneseCustomEditor.editorを指定する。そのあとjapaneseCustomEditor.setupメソッドを呼び出す。
 ```javascript
 jspreadsheet(document.getElementById('spreadsheet'), {
 	data: data,
