@@ -14,12 +14,12 @@ Pro版であればこの問題は発生しないが、無料のJspreadsheet CE�
 jspreadsheet(document.getElementById('spreadsheet'), {
 	data: data,
 	columns: [
-		{ type: 'text', title:'A', width:150, editor: japaneseCustomEditor },
-		{ type: 'text', title:'B', width:150, editor: japaneseCustomEditor },
+		{ type: 'text', title:'A', width:150, editor: japaneseCustomEditor.editor },
+		{ type: 'text', title:'B', width:150, editor: japaneseCustomEditor.editor },
 	],
 ...
 }
 // カスタムエディタのセットアップ
-setupJapaneseCustomEditor();
+japaneseCustomEditor.setup();
 ```
 
