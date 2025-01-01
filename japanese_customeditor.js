@@ -21,39 +21,36 @@ var japaneseCustomEditor = (() => {
 			editing = false;
 			return value;
 		},
-		openEditor : function(cell) {
+		openEditor : function(cell, el, empty, e) {
 			cell.classList.add('editor');
 			// カスタムエディタではcellに何らかの子要素を追加する必要があるのでとりあえずdivを追加
 			let div = document.createElement('div');
 			cell.appendChild(div);
 			cell.style.color = 'transparent';
-			editor.innerText = cell.innerText;
+			editor.innerText = empty == true ? '' : cell.innerText;
+			if (editor.innerText.length > 0) {
+				// 何か入力されている場合はその末尾にキャレットを表示する
+				let selection = document.getSelection();
+				let range = document.createRange();
+				range.setStart(editor.childNodes[0], editor.innerText.length);
+				range.setEnd(editor.childNodes[0], editor.innerText.length);
+				selection.removeAllRanges();
+				selection.addRange(range);
+			} else {
+				// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
+				editor.style.display = 'flex';
+				const style = "width:100%;outline:none;caret-color:black;margin:auto;";
+				editor.innerHTML = `<div style="${style}">_</div>`;
+				let height = editor.children[0].clientHeight;
+				editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
+				editor.children[0].focus();
+			}
 			editor.style.caretColor = 'black';
 			editing = true;
 			editor.focus();
 		},
 		getValue : function(cell) {
 			return cell.innerText;
-		},
-		setValue : function(cell, value) {
-			let x = editor.getAttribute('data-x');
-			let y = editor.getAttribute('data-y');
-			// Update history
-			let records = [];
-			records.push({
-				col:x,
-				row:y,
-				oldValue:cell.innerText,
-				newValue:value,
-				x:x,
-				y:y
-			});
-			cell.innerHTML = value;
-			jexcel.current.setHistory({
-				action:'setValue',
-				records:records,
-				selection:jexcel.current.selectedCell,
-			});
 		},
 		updateCell : function(div, value, force) {
 			div.innerText = value;
@@ -74,15 +71,6 @@ var japaneseCustomEditor = (() => {
 		let cell = jexcel.current.getCellFromCoords(x, y)
 		if (e.which == 27) {
 			// Escape
-			if (editing) {
-				editor.innerText = cell.innerText;
-				editor.style.caretColor = 'transparent';
-				editing = false;
-				setTimeout(() => {
-					editor.focus();
-				}, 1);
-			}
-			e.preventDefault();
 		} else if (e.which == 13) {
 			// Enter
 			if (editing) {
@@ -137,17 +125,7 @@ var japaneseCustomEditor = (() => {
 			// Backspace
 			if (!editing) {
 				jexcel.current.setValue(jexcel.current.highlighted, '');
-				// 一時的にセルの選択を解除してjexcel.keyDownControlsイベントをスキップする
-				jexcel.current.selectedCell = null;
-				setTimeout(() => {
-					jexcel.current.selectedCell = [];
-					jexcel.current.selectedCell[0] = x;
-					jexcel.current.selectedCell[1] = y;
-					jexcel.current.selectedCell[2] = x;
-					jexcel.current.selectedCell[3] = y;
-					jexcel.current.updateSelectionFromCoords(x, y, x, y);
-				}, 1);
-				e.preventDefault();
+				e.stopImmediatePropagation();
 			}
 		} else {
 			if ((e.ctrlKey || e.metaKey) && ! e.shiftKey) {
@@ -177,41 +155,32 @@ var japaneseCustomEditor = (() => {
 				if (e.keyCode == 113) {
 					// F2
 					if (!editing) {
-						editing = true;
-						editor.innerText = cell.innerText;
-						editor.style.caretColor = 'black';
-						if (editor.innerText.length > 0) {
-							let selection = document.getSelection();
-							let range = document.createRange();
-							range.setStart(editor.childNodes[0], editor.innerText.length);
-							range.setEnd(editor.childNodes[0], editor.innerText.length);
-							selection.removeAllRanges();
-							selection.addRange(range);
-						}
-						cell.style.color = 'transparent';
 						jexcel.current.openEditor(jexcel.current.records[y][x], false);
+					}
+				} else if (e.keyCode == 32) {
+					// space
+					if (!editing) {
+						jexcel.current.openEditor(jexcel.current.records[y][x], false);
+						// 既定ではspace押下で編集モードになるだけでspaceが入力されないためプログラムで設定する
+						editor.innerText = ' ';
 					}
 				} else if ((e.keyCode == 8) ||
 						(e.keyCode >= 48 && e.keyCode <= 57) ||
 						(e.keyCode >= 96 && e.keyCode <= 111) ||
 						(e.keyCode >= 186) ||
 						((String.fromCharCode(e.keyCode) == e.key || String.fromCharCode(e.keyCode).toLowerCase() == e.key.toLowerCase()) && jexcel.validLetter(String.fromCharCode(e.keyCode)))) {
-					editing = true;
-					editor.style.caretColor = 'black';
-					cell.style.color = 'transparent';
+					if (!editing) {
+						jexcel.current.openEditor(jexcel.current.records[y][x], true);
+					}
 				}
 			}
 		}
 	});
 
 	editor.addEventListener('dblclick', (e) => {
+		if (editing) return;
 		let x = editor.getAttribute('data-x');
 		let y = editor.getAttribute('data-y');
-		let cell = jexcel.current.getCellFromCoords(x, y)
-		editing = true;
-		editor.innerText = cell.innerText;
-		editor.style.caretColor = 'black';
-		cell.style.color = 'transparent';
 		jexcel.current.openEditor(jexcel.current.records[y][x], false);
 	});
 	editor.addEventListener('blur', (e) => {
