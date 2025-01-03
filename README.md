@@ -3,6 +3,13 @@
 Jspreadsheet CEはセルを編集中でないときに日本語を入力すると「あ」が「a」、「か」が「kあ」になってしまう。
 Pro版であればこの問題は発生しないが、無料のJspreadsheet CEでカスタムエディタを使ってこの問題を解決する。
 
+## 動作環境
+* Windows 11 Pro 23H2
+* Jspreadsheet CE v.4.3.0
+* Google Chrome バージョン: 131.0.6778.86（Official Build） （64 ビット）
+* Microsoft Edge 131.0.2903.86（64 ビット）
+* Firefox 128.5.1esr（64 ビット）
+
 ## 使い方
 1. japanese_customeditor.jsを読み込む
 ```html
