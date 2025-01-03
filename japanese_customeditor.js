@@ -238,11 +238,11 @@ var japaneseCustomEditor = (() => {
 		editor.style.minHeight = (info.height) + 'px';
 		const scrollTop = jexcel.current.content.scrollTop;
 		const scrollLeft = jexcel.current.content.scrollLeft + (document.documentElement.scrollLeft || document.body.scrollLeft);
-		editor.style.top = info.top - cornerCell.top + scrollTop;
+		editor.style.top = (info.top - cornerCell.top + scrollTop) + 'px';
 		if (cornerCell.left >= 0) {
-			editor.style.left = info.left - cornerCell.left;
+			editor.style.left = (info.left - cornerCell.left) + 'px';
 		} else {
-			editor.style.left = info.left + scrollLeft - cornerLeft;
+			editor.style.left = (info.left + scrollLeft - cornerLeft) + 'px';
 		}
 		editor.focus();
 	}
