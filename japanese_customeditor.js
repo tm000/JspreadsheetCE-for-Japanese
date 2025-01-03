@@ -61,7 +61,6 @@ var japaneseCustomEditor = (() => {
 	// 状態を制御するため変数を定義
 	var oldcell;
 	var editing = false;
-	var copyingEmpty = false;
 	var cornerLeft;
 
 	editor.addEventListener('keydown', (e) => {
@@ -131,25 +130,8 @@ var japaneseCustomEditor = (() => {
 			if ((e.ctrlKey || e.metaKey) && ! e.shiftKey) {
 				if (e.which == 67 || e.which == 88) {
 					// Ctrl + C, Ctrl + X
-					if (!editing && cell.innerText == '') {
-						copyingEmpty = true;
-						let copyText = document.createElement('input');
-						copyText.value = '';
-						copyText.select();
-						copyText.setSelectionRange(0, 99999); // For mobile devices
-						navigator.clipboard.writeText(copyText.value);
-						e.preventDefault();
-						return;
-					}
-					copyingEmpty = false;
 				} else if (e.which == 86) {
 					// Ctrl + V
-					if (!editing && copyingEmpty) {
-						jexcel.current.updateCell(parseInt(x), parseInt(y), '', false);
-						jexcel.current.closeEditor(cell, false);
-						e.preventDefault();
-						return;
-					}
 				}
 			} else {
 				if (e.keyCode == 113) {
@@ -285,6 +267,36 @@ var japaneseCustomEditor = (() => {
 		document.addEventListener("touchstart", ignoreCustmnEditor(jexcel.touchStartControls));
 		document.addEventListener("touchend", ignoreCustmnEditor(jexcel.touchEndControls));
 		document.addEventListener("touchcancel", ignoreCustmnEditor(jexcel.touchEndControls));
+
+		// 空白セルを含むコピー＆ペーストにバグがあるので対策する
+		var defaultparseCSV = jexcel.current.parseCSV;
+		jexcel.current.parseCSV = function(str, delimiter) {
+			if ((str.length > 1 && (str.charCodeAt(str.length-2) == 13 && str.charCodeAt(str.length-1) == 10)) ||
+				(str.length === 0)) {
+				str += "\n\n";
+			} else {
+				// Remove last line break
+				str = str.replace(/\r?\n$|\r$|\n$/g, "");
+				// Last caracter is the delimiter
+				if (str.charCodeAt(str.length-1) == 9) {
+				    str += "\n\n";
+				}
+			}
+			return defaultparseCSV(str, delimiter);
+		}
+
+		var defaultselect = jexcel.current.textarea.select;
+		jexcel.current.textarea.select = function() {
+			if (this.value.length == 0) {
+				// コピーしたセルが空の場合、空文字をクリップボードにコピーする
+				let copyText = document.createElement('input');
+				copyText.value = '';
+				copyText.select();
+				copyText.setSelectionRange(0, 99999); // For mobile devices
+				navigator.clipboard.writeText(copyText.value);
+			}
+			defaultselect.call(this);
+		}
 	
 		jexcel.current.options['onselection'] = function(e,x,y,x2,y2) {
 			if (oldcell) {
@@ -297,12 +309,12 @@ var japaneseCustomEditor = (() => {
 				}
 				if (oldcell.children[0]) oldcell.removeChild(oldcell.children[0]);
 			}
-			if (!e.jexcel.options.columns[x].editor) {
+			let cell = e.jexcel.getCellFromCoords(x, y);
+			if (!e.jexcel.options.columns[x].editor || cell.classList.contains('readonly') == true) {
 				// カスタムエディタのセルではなければeditorは表示しない
 				editor.style.display = 'none';
 				return;
 			}
-			let cell = e.jexcel.getCellFromCoords(x, y);
 			updateEditorSize(x, y);
 			editor.style.display = 'block';
 			editor.innerHTML = '';
