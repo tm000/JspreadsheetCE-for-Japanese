@@ -271,8 +271,7 @@ var japaneseCustomEditor = (() => {
 		// 空白セルを含むコピー＆ペーストにバグがあるので対策する
 		var defaultparseCSV = jexcel.current.parseCSV;
 		jexcel.current.parseCSV = function(str, delimiter) {
-			if ((str.length > 1 && (str.charCodeAt(str.length-2) == 13 && str.charCodeAt(str.length-1) == 10)) ||
-				(str.length === 0)) {
+			if (str.length === 0 || str.charCodeAt(str.length-1) == 10) {
 				str += "\n\n";
 			} else {
 				// Remove last line break
