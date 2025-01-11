@@ -29,13 +29,12 @@ var japaneseCustomEditor = (() => {
 			cell.style.color = 'transparent';
 			editor.innerText = empty == true ? '' : cell.innerText;
 			if (editor.innerText.length > 0) {
-				// 何か入力されている場合はその末尾にキャレットを表示する
-				let selection = document.getSelection();
-				let range = document.createRange();
-				range.setStart(editor.childNodes[0], editor.innerText.length);
-				range.setEnd(editor.childNodes[0], editor.innerText.length);
-				selection.removeAllRanges();
-				selection.addRange(range);
+				if (event !== undefined) {
+					// タッチ操作以外で何か入力されている場合はその末尾にキャレットを表示する
+					event.preventDefault();
+					let selection = document.getSelection();
+					selection?.setPosition(editor.childNodes[0], editor.innerText.length);
+				}
 			} else {
 				// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
 				editor.style.display = 'flex';
@@ -108,7 +107,7 @@ var japaneseCustomEditor = (() => {
 					h2 += jexcel.current.records[y][jexcel.current.selectedCell[2]].getBoundingClientRect().height;
 				}
 			} else {
-				// Down  
+				// Down
 				for (; h2 < (h1 - 30) && y < jexcel.current.rows.length; y++) {
 					h2 += jexcel.current.records[y][jexcel.current.selectedCell[2]].getBoundingClientRect().height;
 				}
@@ -180,8 +179,11 @@ var japaneseCustomEditor = (() => {
 				let cell = jexcel.current.getCellFromCoords(x, y)
 
 				if (x && y) {
+					if (typeof e.cancelable !== "boolean" || e.cancelable) {
+						e.preventDefault();
+					}
 					jexcel.current.updateSelectionFromCoords(x, y);
-					jexcel.timeControl = setTimeout(function() {
+					jexcel.timeControl_jce = setTimeout(function() {
 						jexcel.current.openEditor(cell, false, e);
 					}, 500);
 				}
@@ -189,17 +191,15 @@ var japaneseCustomEditor = (() => {
 		}
 	});
 	editor.addEventListener('touchend', (e) => {
-		if (jexcel.timeControl) {
-			clearTimeout(jexcel.timeControl);
-			jexcel.timeControl = null;
-			jexcel.tmpElement = null;
+		if (jexcel.timeControl_jce) {
+			clearTimeout(jexcel.timeControl_jce);
+			jexcel.timeControl_jce = null;
 		}
 	});
 	editor.addEventListener('touchcancel', (e) => {
-		if (jexcel.timeControl) {
-			clearTimeout(jexcel.timeControl);
-			jexcel.timeControl = null;
-			jexcel.tmpElement = null;
+		if (jexcel.timeControl_jce) {
+			clearTimeout(jexcel.timeControl_jce);
+			jexcel.timeControl_jce = null;
 		}
 	});
 
@@ -251,23 +251,27 @@ var japaneseCustomEditor = (() => {
 		if (typeof jexcel === 'undefined') jexcel = jspreadsheet;
 		// 既定のtouchイベントを非カスタムエディタ用にする
 		document.removeEventListener("touchstart", jexcel.touchStartControls);
-		document.removeEventListener("touchend", jexcel.touchEndControls);
-		document.removeEventListener("touchcancel", jexcel.touchEndControls);
-		var ignoreCustmnEditor = (handler) => (e) => {
+		document.addEventListener("touchstart", (e) => {
 			if (jexcel.current && !jexcel.current.edition) {
 				if (jexcel.current.options && jexcel.current.options.columns) {
 					var column = jexcel.current.options.columns[e.target.getAttribute('data-x')];
 					if (column && !column.editor) {
-						// カスタムエディタのセルでない場合、handler実行
-						handler(e);
+						// カスタムエディタのセルでない場合のみ実行
+						jexcel.touchStartControls(e);
 					}
 				}
 			}
-		};
-		document.addEventListener("touchstart", ignoreCustmnEditor(jexcel.touchStartControls));
-		document.addEventListener("touchend", ignoreCustmnEditor(jexcel.touchEndControls));
-		document.addEventListener("touchcancel", ignoreCustmnEditor(jexcel.touchEndControls));
-
+		});
+		// セルを編集時は既存のcontextmenuイベントを発生させない
+		document.removeEventListener("contextmenu", jexcel.contextMenuControls);
+		document.addEventListener("contextmenu", (e) => {
+			if (jexcel.current) {
+				if (!jexcel.current.edition) {
+					// 編集中でない場合のみ実行
+					jexcel.contextMenuControls(e);
+				}
+			}
+		});
 		// 空白セルを含むコピー＆ペーストにバグがあるので対策する
 		var defaultparseCSV = jexcel.current.parseCSV;
 		jexcel.current.parseCSV = function(str, delimiter) {
@@ -278,7 +282,7 @@ var japaneseCustomEditor = (() => {
 				str = str.replace(/\r?\n$|\r$|\n$/g, "");
 				// Last caracter is the delimiter
 				if (str.charCodeAt(str.length-1) == 9) {
-				    str += "\n\n";
+					str += "\n\n";
 				}
 			}
 			return defaultparseCSV(str, delimiter);
