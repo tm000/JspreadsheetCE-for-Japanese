@@ -85,11 +85,6 @@ var japaneseCustomEditor = (() => {
 		// Which key
 		if (e.which == 13 || e.which == 9) {
 			// Move cursor, Tab
-			jexcel.current.selectedCell = [];
-			jexcel.current.selectedCell[0] = x;
-			jexcel.current.selectedCell[1] = y;
-			jexcel.current.selectedCell[2] = x;
-			jexcel.current.selectedCell[3] = y;
 			jexcel.current.updateSelectionFromCoords(x, y, x, y);
 		} if (e.which == 33 || e.which == 34) {
 			// PageUp, Page Down
@@ -112,11 +107,6 @@ var japaneseCustomEditor = (() => {
 					h2 += jexcel.current.records[y][jexcel.current.selectedCell[2]].getBoundingClientRect().height;
 				}
 			}
-			jexcel.current.selectedCell = [];
-			jexcel.current.selectedCell[0] = x;
-			jexcel.current.selectedCell[1] = y;
-			jexcel.current.selectedCell[2] = x;
-			jexcel.current.selectedCell[3] = y;
 			jexcel.current.updateSelectionFromCoords(x, y, x, y);
 			return;
 		} else if (e.which == 8) {
@@ -220,11 +210,6 @@ var japaneseCustomEditor = (() => {
 				y = jexcel.current.rows.length - 1;
 				editor.setAttribute('data-y', y);
 			}
-			jexcel.current.selectedCell = [];
-			jexcel.current.selectedCell[0] = x;
-			jexcel.current.selectedCell[1] = y;
-			jexcel.current.selectedCell[2] = x;
-			jexcel.current.selectedCell[3] = y;
 			jexcel.current.updateSelectionFromCoords(x, y, x, y);
 		}
 		updateEditorSize(x, y);
