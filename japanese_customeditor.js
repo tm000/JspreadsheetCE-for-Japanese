@@ -45,6 +45,7 @@ var japaneseCustomEditor = (() => {
 				editor.children[0].focus();
 			}
 			editor.style.caretColor = 'black';
+			document.getSelection().collapse(editor);
 			editing = true;
 			editor.focus();
 		},
