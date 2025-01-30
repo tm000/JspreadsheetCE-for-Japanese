@@ -18,10 +18,15 @@ var japaneseCustomEditor = (() => {
 			cell.style.caretColor = 'transparent';
 			editor.innerText = '';
 			editor.style.caretColor = 'transparent';
-			editing = false;
 			return value;
 		},
 		openEditor : function(cell, el, empty, e) {
+			if (cell == editor) {
+				// touchイベントではeditorが渡されるのでcellに変換する
+				let x = editor.getAttribute('data-x');
+				let y = editor.getAttribute('data-y');
+				cell = jexcel.current.getCellFromCoords(x, y);
+			}
 			cell.classList.add('editor');
 			// カスタムエディタではcellに何らかの子要素を追加する必要があるのでとりあえずdivを追加
 			let div = document.createElement('div');
@@ -44,9 +49,11 @@ var japaneseCustomEditor = (() => {
 				editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
 				editor.children[0].focus();
 			}
+			if (event == undefined) {
+				// タッチ操作の場合、選択を解除
+				document.getSelection().collapse(editor);
+			}
 			editor.style.caretColor = 'black';
-			document.getSelection().collapse(editor);
-			editing = true;
 			editor.focus();
 		},
 		getValue : function(cell) {
@@ -58,27 +65,21 @@ var japaneseCustomEditor = (() => {
 		}
 	};
 
-	// 状態を制御するため変数を定義
-	var oldcell;
-	var editing = false;
-	var cornerLeft;
-
 	editor.addEventListener('keydown', (e) => {
 		let x = editor.getAttribute('data-x');
 		let y = editor.getAttribute('data-y');
 		if (x == undefined || y == undefined) return;
-		let cell = jexcel.current.getCellFromCoords(x, y)
 		if (e.which == 27) {
 			// Escape
 		} else if (e.which == 13) {
 			// Enter
-			if (editing) {
+			if (jexcel.current.edition) {
 				editor.blur();
 			}
 			e.preventDefault();
 		} else if (e.which == 9) {
 			// Tab
-			if (editing) {
+			if (jexcel.current.edition) {
 				editor.blur();
 			}
 		}
@@ -112,7 +113,7 @@ var japaneseCustomEditor = (() => {
 			return;
 		} else if (e.which == 8) {
 			// Backspace
-			if (!editing) {
+			if (!jexcel.current.edition) {
 				jexcel.current.setValue(jexcel.current.highlighted, '');
 				e.stopImmediatePropagation();
 			}
@@ -126,12 +127,12 @@ var japaneseCustomEditor = (() => {
 			} else {
 				if (e.keyCode == 113) {
 					// F2
-					if (!editing) {
+					if (!jexcel.current.edition) {
 						jexcel.current.openEditor(jexcel.current.records[y][x], false);
 					}
 				} else if (e.keyCode == 32) {
 					// space
-					if (!editing) {
+					if (!jexcel.current.edition) {
 						jexcel.current.openEditor(jexcel.current.records[y][x], false);
 						// 既定ではspace押下で編集モードになるだけでspaceが入力されないためプログラムで設定する
 						editor.innerText = ' ';
@@ -141,7 +142,7 @@ var japaneseCustomEditor = (() => {
 						(e.keyCode >= 96 && e.keyCode <= 111) ||
 						(e.keyCode >= 186) ||
 						((String.fromCharCode(e.keyCode) == e.key || String.fromCharCode(e.keyCode).toLowerCase() == e.key.toLowerCase()) && jexcel.validLetter(String.fromCharCode(e.keyCode)))) {
-					if (!editing) {
+					if (!jexcel.current.edition) {
 						jexcel.current.openEditor(jexcel.current.records[y][x], true);
 					}
 				}
@@ -150,49 +151,29 @@ var japaneseCustomEditor = (() => {
 	});
 
 	editor.addEventListener('dblclick', (e) => {
-		if (editing) return;
+		if (jexcel.current.edition) return;
 		let x = editor.getAttribute('data-x');
 		let y = editor.getAttribute('data-y');
 		jexcel.current.openEditor(jexcel.current.records[y][x], false);
 	});
 	editor.addEventListener('blur', (e) => {
-		if (!editing) return;
+		if (!jexcel.current || !jexcel.current.edition) return;
 		let x = editor.getAttribute('data-x');
 		let y = editor.getAttribute('data-y');
-		let cell = jexcel.current.getCellFromCoords(x, y)
+		let cell = jexcel.current.getCellFromCoords(x, y);
 		jexcel.current.closeEditor(cell, true);
 	});
-	editor.addEventListener('touchstart', (e) => {
-		if (jexcel.current) {
-			if (! jexcel.current.edition) {
-				let x = editor.getAttribute('data-x');
-				let y = editor.getAttribute('data-y');
-				let cell = jexcel.current.getCellFromCoords(x, y)
-
-				if (x && y) {
-					if (typeof e.cancelable !== "boolean" || e.cancelable) {
-						e.preventDefault();
-					}
-					jexcel.current.updateSelectionFromCoords(x, y);
-					jexcel.timeControl_jce = setTimeout(function() {
-						jexcel.current.openEditor(cell, false, e);
-					}, 500);
-				}
-			}
+	function editorTouchEnd(e) {
+		if (jexcel.tmpElement == editor) {
+			// editorをタッチした場合はtmpElementをcellに変更する必要がある
+			let x = editor.getAttribute('data-x');
+			let y = editor.getAttribute('data-y');
+			let cell = jexcel.current.getCellFromCoords(x, y);
+			jexcel.tmpElement = cell;
 		}
-	});
-	editor.addEventListener('touchend', (e) => {
-		if (jexcel.timeControl_jce) {
-			clearTimeout(jexcel.timeControl_jce);
-			jexcel.timeControl_jce = null;
-		}
-	});
-	editor.addEventListener('touchcancel', (e) => {
-		if (jexcel.timeControl_jce) {
-			clearTimeout(jexcel.timeControl_jce);
-			jexcel.timeControl_jce = null;
-		}
-	});
+	}
+	editor.addEventListener('touchend', editorTouchEnd);
+	editor.addEventListener('touchcancel', editorTouchEnd);
 
 	function updateEditorPosition() {
 		if (!jexcel.current) return;
@@ -218,36 +199,25 @@ var japaneseCustomEditor = (() => {
 
 	function updateEditorSize(x, y) {
 		let cornerCell = jexcel.current.headerContainer.children[0].getBoundingClientRect();
+		let contentRect = jexcel.current.content.getBoundingClientRect();
 		let cell = jexcel.current.getCellFromCoords(x, y)
 		let info = cell.getBoundingClientRect();
 		editor.style.minWidth = (info.width) + 'px';
 		editor.style.minHeight = (info.height) + 'px';
 		const scrollTop = jexcel.current.content.scrollTop;
-		const scrollLeft = jexcel.current.content.scrollLeft + (document.documentElement.scrollLeft || document.body.scrollLeft);
+		const scrollLeft = jexcel.current.content.scrollLeft;
 		editor.style.top = (info.top - cornerCell.top + scrollTop) + 'px';
 		if (cornerCell.left >= 0) {
 			editor.style.left = (info.left - cornerCell.left) + 'px';
 		} else {
-			editor.style.left = (info.left + scrollLeft - cornerLeft) + 'px';
+			editor.style.left = (info.left + scrollLeft - contentRect.left) + 'px';
 		}
 		editor.focus();
 	}
 
 	jce.setup = function() {
 		if (typeof jexcel === 'undefined') jexcel = jspreadsheet;
-		// 既定のtouchイベントを非カスタムエディタ用にする
-		document.removeEventListener("touchstart", jexcel.touchStartControls);
-		document.addEventListener("touchstart", (e) => {
-			if (jexcel.current && !jexcel.current.edition) {
-				if (jexcel.current.options && jexcel.current.options.columns) {
-					var column = jexcel.current.options.columns[e.target.getAttribute('data-x')];
-					if (column && !column.editor) {
-						// カスタムエディタのセルでない場合のみ実行
-						jexcel.touchStartControls(e);
-					}
-				}
-			}
-		});
+		// 既定のイベントをカスタマイズ
 		// セルを編集時は既存のcontextmenuイベントを発生させない
 		document.removeEventListener("contextmenu", jexcel.contextMenuControls);
 		document.addEventListener("contextmenu", (e) => {
@@ -259,7 +229,7 @@ var japaneseCustomEditor = (() => {
 			}
 		});
 		// 空白セルを含むコピー＆ペーストにバグがあるので対策する
-		var defaultparseCSV = jexcel.current.parseCSV;
+		var defaultParseCSV = jexcel.current.parseCSV;
 		jexcel.current.parseCSV = function(str, delimiter) {
 			if (str.length === 0 || str.charCodeAt(str.length-1) == 10) {
 				str += "\n\n";
@@ -271,10 +241,10 @@ var japaneseCustomEditor = (() => {
 					str += "\n\n";
 				}
 			}
-			return defaultparseCSV(str, delimiter);
+			return defaultParseCSV(str, delimiter);
 		}
 
-		var defaultselect = jexcel.current.textarea.select;
+		var defaultSelect = jexcel.current.textarea.select;
 		jexcel.current.textarea.select = function() {
 			if (this.value.length == 0) {
 				// コピーしたセルが空の場合、空文字をクリップボードにコピーする
@@ -284,19 +254,36 @@ var japaneseCustomEditor = (() => {
 				copyText.setSelectionRange(0, 99999); // For mobile devices
 				navigator.clipboard.writeText(copyText.value);
 			}
-			defaultselect.call(this);
+			defaultSelect.call(this);
 		}
-	
-		jexcel.current.options['onselection'] = function(e,x,y,x2,y2) {
-			if (oldcell) {
-				// 以前に選択していたセルの後処理
-				if (editing) {
-					e.jexcel.closeEditor(oldcell, true);
-					oldcell.style.color = '';
-					oldcell.style.opacity = 1.0;
-					editing = false;
+
+		var defaultUpdateCornerPosition = jexcel.current.updateCornerPosition;
+		jexcel.current.updateCornerPosition = function() {
+			defaultUpdateCornerPosition();
+			// Resizing is ongoing
+			if (jexcel.current.resizing) {
+				let x = editor.getAttribute('data-x');
+				let y = editor.getAttribute('data-y');
+				if (x && y) {
+					updateEditorSize(x, y);
 				}
-				if (oldcell.children[0]) oldcell.removeChild(oldcell.children[0]);
+			} else {
+				updateEditorPosition();
+			}
+		}
+		var defaultResetSelection = jexcel.current.resetSelection;
+		jexcel.current.resetSelection = function(blur) {
+			defaultResetSelection(blur);
+			editor.style.display = 'none';
+		}
+
+		jexcel.current.options['onselection'] = function(e,x,y,x2,y2) {
+			// 以前に選択していたセルの後処理
+			if (e.jexcel.edition) {
+				let currentx = editor.getAttribute('data-x');
+				let currenty = editor.getAttribute('data-y');
+				let cell = e.jexcel.getCellFromCoords(currentx, currenty);
+				e.jexcel.closeEditor(cell, true);
 			}
 			let cell = e.jexcel.getCellFromCoords(x, y);
 			if (!e.jexcel.options.columns[x].editor || cell.classList.contains('readonly') == true) {
@@ -317,37 +304,10 @@ var japaneseCustomEditor = (() => {
 			setTimeout(() => {
 				editor.focus();
 			}, 1);
-			oldcell = cell;
 		};
-		jexcel.current.options['onevent'] = function(e) {
-			// 一部しか表示されていないセルを選択した場合、editorの位置を補正する
-			setTimeout(updateEditorPosition, 1);
-		};
-	
+
 		// エディタをspreadsheetの一部として追加
 		jexcel.current.content.appendChild(editor);
-		// 列幅、行高さ変更時、editorの大きさを再設定する
-		jexcel.current.content.addEventListener('mousemove', (e) => {
-			if (jexcel.isMouseAction == true) {
-				// Resizing is ongoing
-				if (jexcel.current.resizing) {
-					let x = editor.getAttribute('data-x');
-					let y = editor.getAttribute('data-y');
-					updateEditorSize(x, y);
-				}
-			}
-		});
-		// コーナーの位置を保持
-		cornerLeft = jexcel.current.headerContainer.children[0].getBoundingClientRect().left + (document.documentElement.scrollLeft || document.body.scrollLeft);
-		// スクロール時、editorの位置を再設定する
-		jexcel.current.content.addEventListener('scroll', (e) => {
-			let x = editor.getAttribute('data-x');
-			let y = editor.getAttribute('data-y');
-			if (x == undefined || y == undefined) return;
-			updateEditorSize(x, y);
-		});
-		// spreadsheetのサイズ変更時にeditorの位置を補正
-		jexcel.current.content.addEventListener("resize", (e) => updateEditorPosition());
 	}
 	return jce;
 })();
