@@ -256,7 +256,15 @@ var japaneseCustomEditor = (() => {
 			}
 			defaultSelect.call(this);
 		}
-
+		var defaultCopy = jexcel.current.copy;
+		jexcel.current.copy = function(highlighted, delimiter, returnData, includeHeaders, download) {
+			const activeElement = document.activeElement;
+			defaultCopy(highlighted, delimiter, returnData, includeHeaders, download);
+			if (activeElement && activeElement.focus) {
+				activeElement.focus();
+			}
+		}
+		
 		var defaultUpdateCornerPosition = jexcel.current.updateCornerPosition;
 		jexcel.current.updateCornerPosition = function() {
 			defaultUpdateCornerPosition();
