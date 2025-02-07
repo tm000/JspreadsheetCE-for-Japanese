@@ -71,17 +71,14 @@ var japaneseCustomEditor = (() => {
 		if (x == undefined || y == undefined) return;
 		if (e.which == 27) {
 			// Escape
-		} else if (e.which == 13) {
+		} else if (e.which == 13 || e.which == 9) {
 			// Enter
 			if (jexcel.current.edition) {
 				editor.blur();
+			} else if (editor.innerText != '') {
+				jexcel.current.setValue(jexcel.current.highlighted, editor.innerText);
 			}
 			e.preventDefault();
-		} else if (e.which == 9) {
-			// Tab
-			if (jexcel.current.edition) {
-				editor.blur();
-			}
 		}
 
 		// Which key
