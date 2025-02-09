@@ -266,7 +266,7 @@ var japaneseCustomEditor = (() => {
 		jexcel.current.updateCornerPosition = function() {
 			defaultUpdateCornerPosition();
 			// Resizing is ongoing
-			if (jexcel.current.resizing) {
+			if (jexcel.current && jexcel.current.resizing) {
 				let x = editor.getAttribute('data-x');
 				let y = editor.getAttribute('data-y');
 				if (x && y) {
