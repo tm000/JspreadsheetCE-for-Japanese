@@ -37,3 +37,4 @@ japaneseCustomEditor.setup();
 3. 複数列を選択した状態で最右セルが空白の場合、コピー＆ペーストを行うと最終セルに□が貼り付けられる。　（対策実施済）
 4. Mobile Safariでセルを長押ししてもコンテキストメニューが表示されない。（[JspreadsheetCE-touch-extension
 Public](https://github.com/tm000/JspreadsheetCE-touch-extension)と合わせて使用することで解消）
+5. セルを編集した後、キーボードの矢印キーで移動するとhistoryのカーソル位置が変化してしまい、REDOした際に実際に編集したセルとずれてしまう。　（未対策）
