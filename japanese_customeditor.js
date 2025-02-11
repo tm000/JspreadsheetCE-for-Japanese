@@ -72,7 +72,7 @@ var japaneseCustomEditor = (() => {
 		if (e.which == 27) {
 			// Escape
 		} else if (e.which == 13 || e.which == 9) {
-			// Enter
+			// Enter, Tab
 			if (jexcel.current.edition) {
 				editor.blur();
 			} else if (editor.innerText != '') {
@@ -86,7 +86,7 @@ var japaneseCustomEditor = (() => {
 			// Move cursor, Tab
 			jexcel.current.updateSelectionFromCoords(x, y, x, y);
 		} if (e.which == 33 || e.which == 34) {
-			// PageUp, Page Down
+			// PageUp, PageDown
 			// Jspreadsheet Container information
 			var contentRect = jexcel.current.content.getBoundingClientRect();
 			var h1 = contentRect.height;
@@ -203,7 +203,7 @@ var japaneseCustomEditor = (() => {
 		editor.style.minHeight = (info.height) + 'px';
 		const scrollTop = jexcel.current.content.scrollTop;
 		const scrollLeft = jexcel.current.content.scrollLeft;
-		editor.style.top = (info.top - cornerCell.top + scrollTop) + 'px';
+		editor.style.top = (info.top - contentRect.top + scrollTop) + 'px';
 		if (cornerCell.left >= 0) {
 			editor.style.left = (info.left - cornerCell.left) + 'px';
 		} else {
