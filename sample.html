@@ -2,39 +2,375 @@
 <html>
 <head>
 	<meta charset="UTF-8">
-	<script src="https://bossanova.uk/jspreadsheet/v4/jexcel.js"></script>
-	<script src="https://jsuites.net/v4/jsuites.js"></script>
+	<script src="https://bossanova.uk/jspreadsheet/v5/jspreadsheet.js"></script>
+	<script src="https://jsuites.net/v5/jsuites.js"></script>
 	<script src="./japanese_customeditor.js"></script>
-	<link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v4/jexcel.css" type="text/css" />
-	<link rel="stylesheet" href="https://jsuites.net/v4/jsuites.css" type="text/css" />
+	<link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v5/jspreadsheet.css" type="text/css" />
+	<link rel="stylesheet" href="https://jsuites.net/v5/jsuites.css" type="text/css" />
 </head>
 <body>
 	<div id="spreadsheet" style="margin:50px"></div>
 	<script>
 	var data = [
 		['Jazz', 'Honda', '2019-02-12', '', true, '$ 2.000,00'],
-		['Civic', 'Honda', '2018-07-11', '', true, '$ 4.000,01'],
-	];
-	for (let i=0; i< 100; i++) data.push([]);
+		['Civic', 'Honda', '2018-07-11', '', true, '$ 4.000,01'],];
+	var data2 = [
+		['Jazz', 'Honda', '2019-02-12', '', true, '$ 2.000,00'],
+		['Civic', 'Honda', '2018-07-11', '', true, '$ 4.000,01'],];
+
+	/**
+	 * Default context menu items
+	 */
+	 function defaultContextmenu(obj, x, y, e, items, section, a1, a2) {
+		// Reset all default items
+		items = [];
+		
+		let o = obj.parent.config;
+
+		// Is mac
+		let ctrl = (navigator.userAgent.indexOf("Mac") !== -1) ? '⌘' : 'Ctrl';
+
+		// Click in the tabs
+		if (section === 'tabs') {
+			if (o.allowRenameWorksheet !== false) {
+				items.push({
+					title: T('Rename this worksheet'),
+					onclick: function() {
+
+						let newName = prompt(T('Rename this worksheet'), e.target.textContent);
+						if (newName) {
+							obj.parent.renameWorksheet(a1, newName);
+						}
+					}
+				});
+			}
+
+			if (o.allowDeleteWorksheet !== false) {
+				items.push({
+					title: T('Delete this worksheet'),
+					onclick: function() {
+						if (confirm(T('Are you sure?'), e.target.textContent)) {
+							obj.parent.deleteWorksheet(a1);
+						}
+					}
+				});
+			}
+
+			items.push({ type:'line' });
+		}
+
+		// Nested header only
+		if (section === 'nested') {
+			// Rename nested headers
+			items.push({
+				title: T('Rename this cell'),
+				onclick: function() {
+					// Get the new title
+					let text = prompt(T('Rename this cell'), e.target.textContent);
+					// Update the nested cell title
+					obj.setNestedCell(a1, a2, { title: text });
+				}
+			});
+
+			items.push({ type:'line' });
+		}
+
+		// Sections that affect the selection
+		//if (section === 'header' || section === 'row' || section === 'cell' || section === 'nested') {
+			// Cut
+			items.push({
+				title: T('Cut'),
+				icon: 'content_cut',
+				shortcut: ctrl + ' + X',
+				onclick: function() {
+					obj.cut();
+				}
+			});
+
+			// Copy
+			items.push({
+				title: T('Copy'),
+				icon: 'content_copy',
+				shortcut: ctrl + ' + C',
+				onclick: function() {
+					obj.copy();
+				}
+			});
+
+			// Paste
+			if (navigator && navigator.clipboard && navigator.clipboard.readText) {
+				items.push({
+					title: T('Paste'),
+					icon: 'content_paste',
+					shortcut: ctrl + ' + V',
+					onclick: function() {
+						if (obj.selectedCell) {
+							navigator.clipboard.readText().then(function(text) {
+								if (text) {
+									let px = Math.min(obj.selectedCell[0], obj.selectedCell[2]);
+									let py = Math.min(obj.selectedCell[1], obj.selectedCell[3]);
+									obj.paste(px, py, text);
+								}
+							});
+						}
+					}
+				});
+			}
+
+			items.push({ type:'line' });
+		//}
+
+		// Clicking in the headers
+		if (section === 'header') {
+			// Insert a new column
+			if (obj.options.allowInsertColumn !== false) {
+				items.push({
+					title: T('Insert a new column before'),
+					onclick: function() {
+						obj.insertColumn(1, parseInt(a1), 1);
+					}
+				});
+
+				items.push({
+					title: T('Insert a new column after'),
+					onclick: function() {
+						obj.insertColumn(1, parseInt(a1), 0);
+					}
+				});
+			}
+
+			// Delete a column
+			if (obj.options.allowDeleteColumn !== false) {
+				items.push({
+					title: T('Delete selected columns'),
+					onclick: function() {
+						obj.deleteColumn(obj.getSelectedColumns());
+					}
+				});
+			}
+
+			// Rename column
+			if (obj.options.allowRenameColumn !== false) {
+				items.push({
+					title: T('Rename this column'),
+					onclick: function() {
+						obj.setHeader(a1);
+					}
+				});
+			}
+
+			// Append new row
+			if (! obj.options.data.length) {
+				// Line
+				items.push({ type:'line' });
+
+				items.push({
+					title: T('Create a new row'),
+					onclick: function() {
+						obj.insertRow(0);
+					}
+				});
+			}
+
+			// Sorting
+			if (obj.options.columnSorting !== false) {
+				// Line
+				items.push({ type:'line' });
+
+				items.push({
+					title: T('Order ascending'),
+					onclick: function() {
+						obj.orderBy(a1, 0);
+					}
+				});
+				items.push({
+					title: T('Order descending'),
+					onclick: function() {
+						obj.orderBy(a1, 1);
+					}
+				});
+
+				items.push({ type:'line' });
+			}
+
+			items.push({
+				title: T('Hide'),
+				onclick: function() {
+					obj.hideColumn(obj.getSelectedColumns());
+				}
+			});
+
+			items.push({
+				title: T('Show'),
+				onclick: function() {
+					obj.showColumn(obj.getSelectedColumns());
+				}
+			});
+
+			items.push({ type:'line' });
+		}
+
+		// Row only
+		if (section === 'cell' || section === 'row') {
+			// Insert new row
+			if (obj.options.allowInsertRow !== false) {
+				items.push({
+					title: T('Insert a new row before'),
+					onclick: function() {
+						obj.insertRow(1, parseInt(y), 1);
+					}
+				});
+
+				items.push({
+					title: T('Insert a new row after'),
+					onclick: function() {
+						obj.insertRow(1, parseInt(y));
+					}
+				});
+			}
+
+			if (obj.options.allowDeleteRow !== false) {
+				items.push({
+					title: T('Delete selected rows'),
+					onclick: function() {
+						obj.deleteRow(obj.getSelectedRows(true));
+					}
+				});
+			}
+
+			items.push({ type:'line' });
+		}
+
+		if (section === 'row') {
+			items.push({
+				title: T('Hide'),
+				onclick: function() {
+					obj.hideRow(obj.getSelectedRows());
+				}
+			});
+
+			items.push({
+				title: T('Show'),
+				onclick: function() {
+					obj.showRow(obj.getSelectedRows());
+				}
+			});
+
+			items.push({ type:'line' });
+		}
+
+		// Click in the cell
+		if (section === 'cell') {
+			if (obj.options.allowComments !== false) {
+				let title = obj.records[a2][a1].element.getAttribute('title') || '';
+
+				items.push({
+					title: title ? T('Edit notes') : T('Add notes'),
+					icon: 'notes',
+					onclick: function() {
+						let comment = prompt(T('Notes'), title);
+						if (comment) {
+							let cell = jspreadsheet.helpers.getColumnNameFromCoords(a1, a2);
+							obj.setComments(cell, comment);
+						}
+					}
+				});
+
+				if (title) {
+					items.push({
+						title: T('Clear notes'),
+						onclick: function() {
+							let cell = jspreadsheet.helpers.getColumnNameFromCoords(a1, a2);
+							obj.setComments(cell, '');
+						}
+					});
+				}
+
+				// Line
+				items.push({ type:'line' });
+			}
+		}
+
+		if (section === 'select-all') {
+			items.push({
+				title: T('Show all'),
+				onclick: function() {
+					obj.showRow(obj.getSelectedRows());
+					obj.showColumn(obj.getSelectedColumns());
+				}
+			});
+
+			// Line
+			items.push({ type:'line' });
+		}
+
+		// Save
+		if (o.allowExport !== false) {
+			items.push({
+				title: T('Save as'),
+				icon: 'save',
+				shortcut: ctrl + ' + S',
+				onclick: function () {
+					obj.download();
+				}
+			});
+		}
+
+		// About
+		if (o.about !== false) {
+			items.push({
+				title: T('About'),
+				icon: 'info',
+				onclick: function() {
+					alert(jspreadsheet.version().print());
+				}
+			});
+		}
+
+		return items;
+	}
+
 	jspreadsheet(document.getElementById('spreadsheet'), {
-		data: data,
-		columns: [
-			{ type: 'text', title:'A', width:170, editor: japaneseCustomEditor.editor },
-			{ type: 'text', title:'B', width:150, editor: japaneseCustomEditor.editor },
-			{ type: 'text', title:'C', width:120, editor: japaneseCustomEditor.editor },
-			{ type: 'text', title:'D', width:180, editor: japaneseCustomEditor.editor },
-			{ type: 'text', title:'標準', width:150 },
-			{ type: 'text', title:'F', width:200, editor: japaneseCustomEditor.editor },
+		worksheets: [
+			{
+				data: data,
+				toolbar: true,
+				minDimensions: [6,6],
+				columns: [
+					{ title: 'A', type: japaneseCustomEditor.editor, width: '150px' },
+					{ title: 'B', type: japaneseCustomEditor.editor, width: '150px' },
+					{ title: 'C', type: japaneseCustomEditor.editor, width: '150px' },
+					{ title: 'D', type: japaneseCustomEditor.editor, width: '150px' },
+					{ title: 'E', type: japaneseCustomEditor.editor, width: '150px' },
+					{ title: 'F', type: japaneseCustomEditor.editor, width: '150px' },
+				],
+				tableOverflow:true,
+				tableHeight:'600px',
+				tableWidth:'800px',
+				freezeColumns: 2,
+				fullscreen:false,
+				rowResize:true,
+				includeHeadersOnCopy:1,
+			},
+			{
+				data: data2,
+				minDimensions: [6,6],
+				columns: [
+					{ title: 'A', type: japaneseCustomEditor.editor, width: '150px' },
+					{ title: 'B', type: 'text', width: '120px' },
+					{ title: 'C', type: 'calendar', width: '150px', format:'YYYY-MM-DD' },
+					{ title: 'D', type: 'dropdown', width: '100px', source:['No','Yes'] },
+					{ title: 'E', type: 'checkbox', width: '80px' },
+					{ title: 'F', type: 'numeric', width: '150px', mask: '$ #.##,00', decimal: ',' },
+				],
+				freezeColumns: 2,
+			}
 		],
-		tableOverflow:true,
-		tableHeight:'600px',
-		tableWidth:'1000px',
-		freezeColumns: 2,
-		fullscreen:false,
-		rowResize:true,
+		contextMenu: defaultContextmenu,
+		plugins: {
+			jcePlugin: japaneseCustomEditor.plugin,
+		},
 	});
-	// カスタムエディタのセットアップ
-	japaneseCustomEditor.setup();
 	</script>
 </body>
 </html>
