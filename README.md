@@ -8,7 +8,7 @@ Pro版であればこの問題は発生しないが、無料のJspreadsheet CE�
 * Jspreadsheet CE v.5.0.0
 * Google Chrome バージョン: 132.0.6834.196（Official Build） （64 ビット）
 * Microsoft Edge 132.0.2957.140（64 ビット）
-* Firefox 128.5.1esr（64 ビット）
+* Firefox 128.7.0esr（64 ビット）
 * Mobile Safari 18.2.1
 
 ## 使い方
