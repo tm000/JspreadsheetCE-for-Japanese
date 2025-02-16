@@ -296,8 +296,7 @@ var japaneseCustomEditor = (() => {
 						if (c.length === 0 || c.charCodeAt(c.length-1) == 10) {
 							c += "\n\n";
 						}
-						navigator.clipboard.writeText(c);
-						break;
+						return c;
 					case 'onbeforepaste':
 						// 空白セルを含むコピー＆ペーストにバグがあるので対策する
 						if (b.length == 0) {
