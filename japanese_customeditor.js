@@ -122,6 +122,8 @@ var japaneseCustomEditor = (() => {
 			if (!jexcel.current.edition) {
 				jexcel.current.setValue(jexcel.current.highlighted, '');
 				e.stopImmediatePropagation();
+			} else if (editor.innerText == '') {
+				e.preventDefault();
 			}
 		} else {
 			if ((e.ctrlKey || e.metaKey) && ! e.shiftKey) {
