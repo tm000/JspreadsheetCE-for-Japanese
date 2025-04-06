@@ -6,10 +6,26 @@ var japaneseCustomEditor = (() => {
 	editor.style.position = 'absolute';
 	editor.style.outline = 'none';
 	editor.style.display = 'none';
-	editor.style.alignContent = 'center';
 
 	var jce = {};
 	var isEmpty = false;
+	var selectedCell = [];
+
+	// オプションの既定値
+	var options = {
+		activeCellBackColor: '#CCC6',
+		editFontColor: '#444',
+		editorTextAlign: 'center',	// start, center, end
+		editorVerticalAlign: 'center',	// start, center, end
+		pressSpaceToEdit: false,
+		hideSelection: true
+	};
+
+	// オプション設定関数
+	jce.options = function(newval) {
+		options = {...options, ...newval};
+		return this;
+	}
 
 	// カスタムエディタを定義
 	jce.editor = {
@@ -45,10 +61,15 @@ var japaneseCustomEditor = (() => {
 						let selection = document.getSelection();
 						selection?.setPosition(editor.childNodes[0], editor.innerText.length);
 					}
+					editor.style.alignContent = options.editorVerticalAlign;
 				} else {
 					// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
 					editor.style.display = 'flex';
-					const style = "width:100%;outline:none;caret-color:black;margin:auto;";
+					const style = `width:100%;outline:none;caret-color:black;${({
+										'start': 'margin-bottom:auto',
+										'center': 'margin:auto',
+										'end': 'margin-top:auto',
+									})[options.editorVerticalAlign]};`;
 					editor.innerHTML = `<div style="${style}">_</div>`;
 					let height = editor.children[0].clientHeight;
 					editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
@@ -62,6 +83,7 @@ var japaneseCustomEditor = (() => {
 				document.getSelection().collapse(editor);
 			}
 			editor.style.caretColor = 'black';
+			editor.style.textAlign = options.editorTextAlign;
 			editor.focus();
 		},
 		getValue : function(cell) {
@@ -140,7 +162,7 @@ var japaneseCustomEditor = (() => {
 					}
 				} else if (e.keyCode == 32) {
 					// space
-					if (!jexcel.current.edition) {
+					if (!jexcel.current.edition && !options.pressSpaceToEdit) {
 						// 既定ではspace押下で編集モードになるだけでspaceが入力されないためプログラムで設定する
 						jexcel.current.openEditor(jexcel.current.records[y][x].element, false);
 						editor.innerHTML = '&nbsp;';
@@ -201,14 +223,14 @@ var japaneseCustomEditor = (() => {
 		const scrollLeft = jexcel.current.content.scrollLeft;
 		editor.style.top = (info.top - contentRect.top + scrollTop) + 'px';
 		if (cornerCell.left >= 0) {
-			editor.style.left = (info.left - cornerCell.left) + 'px';
+			editor.style.left = (info.left - cornerCell.left + 1) + 'px';
 		} else {
 			editor.style.left = (info.left + scrollLeft - contentRect.left) + 'px';
 		}
 		editor.focus();
 	}
 
-	jce.setup = function() {
+	function setup() {
 		if (typeof jexcel === 'undefined') jexcel = jspreadsheet;
 		// 既定のイベントをカスタマイズ
 		// セルを編集時は既存のcontextmenuイベントを発生させない
@@ -252,9 +274,8 @@ var japaneseCustomEditor = (() => {
 				updateEditorPosition();
 				editor.style.display = 'block';
 				editor.innerHTML = '';
-				editor.style.background = '#CCC6';
-				editor.style.color = '#444'
-				editor.style.textAlign = 'center';
+				editor.style.background = options.activeCellBackColor;
+				editor.style.color = options.editFontColor;
 				editor.style.caretColor = 'transparent';
 				document.getSelection().collapse(editor);
 				setTimeout(() => {
@@ -277,78 +298,99 @@ var japaneseCustomEditor = (() => {
 		}
 
 		plugin.onevent = function(event, a, b, c, d) {
-			if (event != 'onselection') {
-				let x ,y;
-				switch (event) {
-					case 'onbeforeselection':
-						if (!editor.parentNode.parentNode.classList.contains('jtabs-selected')) {
-							// editorをアクティブシートに移動
-							a.content.appendChild(editor);
-						}
-						break;
-					case 'onblur':
+			let x ,y;
+			switch (event) {
+				case 'onbeforeselection':
+					if (!editor.parentNode.parentNode.classList.contains('jtabs-selected')) {
+						// editorをアクティブシートに移動
+						a.content.appendChild(editor);
+					}
+					return true;
+				case 'onselection':
+					if (!options.hideSelection) {
+						selectedCell = jexcel.current.selectedCell;
+					}
+					break;
+				case 'onfocus':
+					if (!options.hideSelection && selectedCell) {
+						for (let c = selectedCell[0]; c <= selectedCell[2]; c++)
+							for (let r = selectedCell[1]; r <= selectedCell[3]; r++)
+							jexcel.current.highlighted.push(jexcel.current.records[r][c]);
+						selectedCell = undefined;
+						let x1 = jexcel.current.selectedCell[0];
+						let y1 = jexcel.current.selectedCell[1];
+						let x2 = jexcel.current.selectedCell[2];
+						let y2 = jexcel.current.selectedCell[3];
+						jexcel.current.resetSelection();
+						jexcel.current.updateSelectionFromCoords(x1, y1, x2, y2);
+					}
+					break;
+				case 'onblur':
+					if (options.hideSelection) {
 						editor.style.display = 'none';
-						break;
-					case 'oncopy':
-						// htmlのescape文字を通常の文字に変換する
-						let div = document.createElement('div');
-						c = c.split(/\r\n|\r|\n/).map(c => {
-							div.innerHTML = c;
-							return div.innerText;
-						}).join('\n');
-						// コピーしたセルが空の場合、空文字をクリップボードにコピーする
-						if (c.length === 0 || c.charCodeAt(c.length-1) == 10) {
-							c += "\n\n";
-						}
-						return c;
-					case 'onbeforepaste':
-						// 空白セルを含むコピー＆ペーストにバグがあるので対策する
-						if (b.length == 0) {
-							return [['']];
-						} else {
-							for (let i = 0; i < b.length; i++) {
-								for (let j = 0; j < b[i].length; j++) {
-									b[i][j] = b[i][j].value;
-								}
+					} else {
+						jexcel.current.updateSelectionFromCoords(selectedCell[0], selectedCell[1], selectedCell[2], selectedCell[3]);
+					}
+					break;
+				case 'oncopy':
+					// htmlのescape文字を通常の文字に変換する
+					let div = document.createElement('div');
+					c = c.split(/\r\n|\r|\n/).map(c => {
+						div.innerHTML = c;
+						return div.innerText;
+					}).join('\n');
+					// コピーしたセルが空の場合、空文字をクリップボードにコピーする
+					if (c.length === 0 || c.charCodeAt(c.length-1) == 10) {
+						c += "\n\n";
+					}
+					return c;
+				case 'onbeforepaste':
+					// 空白セルを含むコピー＆ペーストにバグがあるので対策する
+					if (b.length == 0) {
+						return [['']];
+					} else {
+						for (let i = 0; i < b.length; i++) {
+							for (let j = 0; j < b[i].length; j++) {
+								b[i][j] = b[i][j].value;
 							}
-							return b;
 						}
-					case 'onresizecolumn':
-					case 'onresizerow':
-						updateEditorPosition();
-						 break;
-					case 'onundo':
-						x = parseInt(editor.getAttribute('data-x'));
-						y = parseInt(editor.getAttribute('data-y'));
-						if (jexcel.current.cols.length - 1 < x || jexcel.current.rows.length - 1 < y) {
-							// redoにより選択していたセルがなくなった場合、有効なセルを再選択する
-							if (jexcel.current.cols.length - 1 < x) {
-								x = jexcel.current.cols.length - 1;
-							}
-							if (jexcel.current.rows.length - 1 < y) {
-								y = jexcel.current.rows.length - 1;
-							}
-							jexcel.current.updateSelectionFromCoords(x, y, x, y);
-						} else {
-							x = parseInt(jexcel.current.selectedCell[0]);
-							y = parseInt(jexcel.current.selectedCell[1]);
+						return b;
+					}
+				case 'onresizecolumn':
+				case 'onresizerow':
+					updateEditorPosition();
+					 break;
+				case 'onundo':
+					x = parseInt(editor.getAttribute('data-x'));
+					y = parseInt(editor.getAttribute('data-y'));
+					if (jexcel.current.cols.length - 1 < x || jexcel.current.rows.length - 1 < y) {
+						// redoにより選択していたセルがなくなった場合、有効なセルを再選択する
+						if (jexcel.current.cols.length - 1 < x) {
+							x = jexcel.current.cols.length - 1;
 						}
-						editor.setAttribute('data-x', x);
-						editor.setAttribute('data-y', y);
-						updateEditorPosition();
-						break;
-					case 'onredo':
-						x = parseInt(jexcel.current.selectedCell[2]);
-						y = parseInt(jexcel.current.selectedCell[3]);
-						editor.setAttribute('data-x', x);
-						editor.setAttribute('data-y', y);
-						updateEditorPosition();
-						break;
-					case 'onload':
-						// カスタムエディタのセットアップ
-						jce.setup();
-						break;
-				}
+						if (jexcel.current.rows.length - 1 < y) {
+							y = jexcel.current.rows.length - 1;
+						}
+						jexcel.current.updateSelectionFromCoords(x, y, x, y);
+					} else {
+						x = parseInt(jexcel.current.selectedCell[0]);
+						y = parseInt(jexcel.current.selectedCell[1]);
+					}
+					editor.setAttribute('data-x', x);
+					editor.setAttribute('data-y', y);
+					updateEditorPosition();
+					break;
+				case 'onredo':
+					x = parseInt(jexcel.current.selectedCell[2]);
+					y = parseInt(jexcel.current.selectedCell[3]);
+					editor.setAttribute('data-x', x);
+					editor.setAttribute('data-y', y);
+					updateEditorPosition();
+					break;
+				case 'onload':
+					// カスタムエディタのセットアップ
+					setup();
+					break;
 			}
 		}
 
