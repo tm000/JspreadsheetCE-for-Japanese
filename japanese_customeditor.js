@@ -13,6 +13,8 @@ var japaneseCustomEditor = (() => {
 	// カスタムエディタを定義
 	jce.editor = {
 		closeEditor : function(cell, save) {
+			// openEditorで空のセルの場合divを追加しているので余計な改行が付くことがあるので削除する
+			if (editor.innerText == '\n') editor.innerText = '';
 			let value = save ? editor.innerText : cell.innerText;
 			cell.style.color = '';
 			cell.style.caretColor = 'transparent';
