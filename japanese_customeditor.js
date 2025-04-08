@@ -6,9 +6,24 @@ var japaneseCustomEditor = (() => {
 	editor.style.position = 'absolute';
 	editor.style.outline = 'none';
 	editor.style.display = 'none';
-	editor.style.alignContent = 'center';
 
 	var jce = {};
+
+	// オプションの既定値
+	var options = {
+		activeCellBackColor: '#CCC6',
+		editFontColor: '#444',
+		editorTextAlign: 'center',	// start, center, end
+		editorVerticalAlign: 'center',	// start, center, end
+		pressSpaceToEdit: false,
+		hideSelection: true
+	};
+
+	// オプション設定関数
+	jce.options = function(newval) {
+		options = {...options, ...newval};
+		return this;
+	}
 
 	// カスタムエディタを定義
 	jce.editor = {
@@ -42,10 +57,15 @@ var japaneseCustomEditor = (() => {
 					let selection = document.getSelection();
 					selection?.setPosition(editor.childNodes[0], editor.innerText.length);
 				}
+				editor.style.alignContent = options.editorVerticalAlign;
 			} else {
 				// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
 				editor.style.display = 'flex';
-				const style = "width:100%;outline:none;caret-color:black;margin:auto;";
+				const style = `width:100%;outline:none;caret-color:black;${({
+									'start': 'margin-bottom:auto',
+									'center': 'margin:auto',
+									'end': 'margin-top:auto',
+								})[options.editorVerticalAlign]};`;
 				editor.innerHTML = `<div style="${style}">_</div>`;
 				let height = editor.children[0].clientHeight;
 				editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
@@ -56,6 +76,7 @@ var japaneseCustomEditor = (() => {
 				document.getSelection().collapse(editor);
 			}
 			editor.style.caretColor = 'black';
+			editor.style.textAlign = options.editorTextAlign;
 			editor.focus();
 		},
 		getValue : function(cell) {
@@ -115,7 +136,7 @@ var japaneseCustomEditor = (() => {
 			if (!jexcel.current.edition) {
 				jexcel.current.setValue(jexcel.current.highlighted, '');
 				e.stopImmediatePropagation();
-			} else if (editor.innerText == '') {
+			} else if (editor.innerText == '' || editor.innerText == '\n') {
 				e.preventDefault();
 			}
 		} else {
@@ -133,10 +154,13 @@ var japaneseCustomEditor = (() => {
 					}
 				} else if (e.keyCode == 32) {
 					// space
-					if (!jexcel.current.edition) {
+					if (!jexcel.current.edition && !options.pressSpaceToEdit) {
 						jexcel.current.openEditor(jexcel.current.records[y][x], false);
 						// 既定ではspace押下で編集モードになるだけでspaceが入力されないためプログラムで設定する
-						editor.innerText = ' ';
+						let selection = document.getSelection();
+						selection?.setPosition(editor.childNodes[0], 1);
+						editor.style.display = 'block';
+						e.preventDefault();
 					}
 				} else if ((e.keyCode == 8) ||
 						(e.keyCode >= 48 && e.keyCode <= 57) ||
@@ -209,7 +233,7 @@ var japaneseCustomEditor = (() => {
 		const scrollLeft = jexcel.current.content.scrollLeft;
 		editor.style.top = (info.top - contentRect.top + scrollTop) + 'px';
 		if (cornerCell.left >= 0) {
-			editor.style.left = (info.left - cornerCell.left) + 'px';
+			editor.style.left = (info.left - cornerCell.left + 1) + 'px';
 		} else {
 			editor.style.left = (info.left + scrollLeft - contentRect.left) + 'px';
 		}
@@ -282,6 +306,7 @@ var japaneseCustomEditor = (() => {
 		}
 		var defaultResetSelection = jexcel.current.resetSelection;
 		jexcel.current.resetSelection = function(blur) {
+			if (blur && !options.hideSelection) return;
 			defaultResetSelection(blur);
 			editor.style.display = 'none';
 		}
@@ -303,8 +328,8 @@ var japaneseCustomEditor = (() => {
 			updateEditorSize(x, y);
 			editor.style.display = 'block';
 			editor.innerHTML = '';
-			editor.style.background = '#CCC6';
-			editor.style.color = '#444'
+			editor.style.background = options.activeCellBackColor;
+			editor.style.color = options.editFontColor;
 			editor.style.textAlign = 'center';
 			editor.setAttribute('data-x', x);
 			editor.setAttribute('data-y', y);
