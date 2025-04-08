@@ -35,14 +35,14 @@ japaneseCustomEditor.setup();
 
 	いくつかオプションの設定ができる。以下のようにjapaneseCustomEditor.optionsに値を指定する。
 ```javascript
-	japaneseCustomEditor.options({
-		activeCellBackColor: '#FF08',
-		editFontColor: '#7008',
-		editorTextAlign: 'center',
-		editorVerticalAlign: 'center',
-		pressSpaceToEdit: true,
-		hideSelection: false
-	}).setup();
+japaneseCustomEditor.options({
+	activeCellBackColor: '#FF08',
+	editFontColor: '#7008',
+	editorTextAlign: 'center',
+	editorVerticalAlign: 'center',
+	pressSpaceToEdit: true,
+	hideSelection: false
+}).setup();
 ```
 
 | 項目   |      内容      | 設定値 |
