@@ -31,7 +31,10 @@ var japaneseCustomEditor = (() => {
 	jce.editor = {
 		closeEditor : function(cell, save) {
 			// openEditorで空のセルの場合divを追加しているので余計な改行が付くことがあるので削除する
-			if (editor.innerText == '\n') editor.innerText = '';
+			if (editor.innerHTML.includes('<br>')) {
+				const indexOfBr = editor.innerHTML.indexOf('<br>');
+				editor.innerHTML = editor.innerHTML.substring(0, indexOfBr).replace(' ', '&nbsp;');
+			}
 			let value = save ? editor.innerText : cell.innerText;
 			cell.style.color = '';
 			cell.style.caretColor = 'transparent';
@@ -64,15 +67,19 @@ var japaneseCustomEditor = (() => {
 				} else {
 					// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
 					editor.style.display = 'flex';
-					const style = `width:100%;outline:none;caret-color:black;${({
+  					editor.style.flexDirection = 'column';
+					const style = `width:1px;outline:none;caret-color:black;${({
+										'start': 'margin-right:auto',
+										'center': 'margin-right:auto;margin-left:auto',
+										'end': 'margin-left:auto',
+									})[options.editorTextAlign]};${({
 										'start': 'margin-bottom:auto',
-										'center': 'margin:auto',
+										'center': 'margin-top:auto;margin-bottom:auto',
 										'end': 'margin-top:auto',
 									})[options.editorVerticalAlign]};`;
 					editor.innerHTML = `<div style="${style}">_</div>`;
 					let height = editor.children[0].clientHeight;
-					editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
-					editor.children[0].focus();
+					editor.innerHTML = `<div contenteditable="true" style="${style}height:${options.editorVerticalAlign == 'end' ? 0 : height}px;"></div>`;
 				}
 			} else {
 				isEmpty = false;
@@ -166,29 +173,41 @@ var japaneseCustomEditor = (() => {
 						// 既定ではspace押下で編集モードになるだけでspaceが入力されないためプログラムで設定する
 						jexcel.current.openEditor(jexcel.current.records[y][x].element, false);
 						if (options.pressSpaceToEdit) {
-							e.preventDefault();
-							if (editor.innerText.length > 0) {
-								editor.innerHTML = `<div>_</div>`;
-								let height = editor.children[0].clientHeight;
-								editor.innerHTML = `<div contenteditable="true" style="height:${height}px;"></div>`;
-								editor.children[0].focus();
-							}
+							const style = `width:1px;outline:none;caret-color:black;${({
+								'start': 'margin-right:auto',
+								'center': 'margin-right:auto;margin-left:auto',
+								'end': 'margin-left:auto',
+							})[options.editorTextAlign]};${({
+								'start': 'margin-bottom:auto',
+								'center': 'margin-top:auto;margin-bottom:auto',
+								'end': 'margin-top:auto',
+							})[options.editorVerticalAlign]};`;
+							editor.innerHTML = `<div style="${style}">_</div>`;
+							let height = editor.children[0].clientHeight;
+							editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
+							editor.children[0].focus();
 						} else {
-							if (editor.innerText.length > 0) {
-								editor.innerHTML = '&nbsp;';
-								let selection = document.getSelection();
-								selection?.setPosition(editor.childNodes[0], 1);
-							} else {
-								editor.innerHTML = '';
-							}
+							editor.innerHTML = '&nbsp;';
+							let selection = document.getSelection();
+							selection?.setPosition(editor.childNodes[0], 1);
 						}
 						editor.style.display = 'block';
+						e.preventDefault();
+					} else if (editor.innerHTML.includes('<div ')) {
+						// 空のセルのvertical-align:centerを実現するために追加したdivを削除する
+						const indexOfBr = editor.innerHTML.indexOf('<div ');
+						editor.innerHTML = editor.innerHTML.substring(0, indexOfBr).replace(' ', '&nbsp;');
 					}
 				} else if ((e.keyCode == 8) ||
 						(e.keyCode >= 48 && e.keyCode <= 57) ||
 						(e.keyCode >= 96 && e.keyCode <= 111) ||
 						(e.keyCode >= 186) ||
 						((String.fromCharCode(e.keyCode) == e.key || String.fromCharCode(e.keyCode).toLowerCase() == e.key.toLowerCase()))) {
+					if (editor.innerHTML.includes('<div ')) {
+						// 空のセルのvertical-align:centerを実現するために追加したdivを削除する
+						const indexOfBr = editor.innerHTML.indexOf('<div ');
+						editor.innerHTML = editor.innerHTML.substring(0, indexOfBr).replace(' ', '&nbsp;');
+					}
 					if (!jexcel.current.edition) {
 						isEmpty = true;
 						jexcel.current.openEditor(jexcel.current.records[y][x].element, true);
