@@ -9,7 +9,7 @@ var japaneseCustomEditor = (() => {
 
 	var jce = {};
 	var isEmpty = false;
-	var selectedCell = [];
+	var lastSelectedCell = [];
 
 	// オプションの既定値
 	var options = {
@@ -61,7 +61,6 @@ var japaneseCustomEditor = (() => {
 						let selection = document.getSelection();
 						selection?.setPosition(editor.childNodes[0], editor.innerText.length);
 					}
-					editor.style.alignContent = options.editorVerticalAlign;
 				} else {
 					// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
 					editor.style.display = 'flex';
@@ -84,6 +83,7 @@ var japaneseCustomEditor = (() => {
 			}
 			editor.style.caretColor = 'black';
 			editor.style.textAlign = options.editorTextAlign;
+			editor.style.alignContent = options.editorVerticalAlign;
 			editor.focus();
 		},
 		getValue : function(cell) {
@@ -144,7 +144,7 @@ var japaneseCustomEditor = (() => {
 			if (!jexcel.current.edition) {
 				jexcel.current.setValue(jexcel.current.highlighted, '');
 				e.stopImmediatePropagation();
-			} else if (editor.innerText == '') {
+			} else if (editor.innerText == '' || editor.innerText == '\n') {
 				e.preventDefault();
 			}
 		} else {
@@ -162,14 +162,27 @@ var japaneseCustomEditor = (() => {
 					}
 				} else if (e.keyCode == 32) {
 					// space
-					if (!jexcel.current.edition && !options.pressSpaceToEdit) {
+					if (!jexcel.current.edition) {
 						// 既定ではspace押下で編集モードになるだけでspaceが入力されないためプログラムで設定する
 						jexcel.current.openEditor(jexcel.current.records[y][x].element, false);
-						editor.innerHTML = '&nbsp;';
-						let selection = document.getSelection();
-						selection?.setPosition(editor.childNodes[0], 1);
+						if (options.pressSpaceToEdit) {
+							e.preventDefault();
+							if (editor.innerText.length > 0) {
+								editor.innerHTML = `<div>_</div>`;
+								let height = editor.children[0].clientHeight;
+								editor.innerHTML = `<div contenteditable="true" style="height:${height}px;"></div>`;
+								editor.children[0].focus();
+							}
+						} else {
+							if (editor.innerText.length > 0) {
+								editor.innerHTML = '&nbsp;';
+								let selection = document.getSelection();
+								selection?.setPosition(editor.childNodes[0], 1);
+							} else {
+								editor.innerHTML = '';
+							}
+						}
 						editor.style.display = 'block';
-						e.preventDefault();
 					}
 				} else if ((e.keyCode == 8) ||
 						(e.keyCode >= 48 && e.keyCode <= 57) ||
@@ -213,6 +226,7 @@ var japaneseCustomEditor = (() => {
 	function updateEditorPosition() {
 		let x = editor.getAttribute('data-x');
 		let y = editor.getAttribute('data-y');
+		if (!x || !y) return;
 		let cornerCell = jexcel.current.headerContainer.children[0].getBoundingClientRect();
 		let contentRect = jexcel.current.content.getBoundingClientRect();
 		let cell = jexcel.current.getCellFromCoords(x, y)
@@ -308,15 +322,15 @@ var japaneseCustomEditor = (() => {
 					return true;
 				case 'onselection':
 					if (!options.hideSelection) {
-						selectedCell = jexcel.current.selectedCell;
+						lastSelectedCell = jexcel.current.selectedCell;
 					}
 					break;
 				case 'onfocus':
-					if (!options.hideSelection && selectedCell) {
-						for (let c = selectedCell[0]; c <= selectedCell[2]; c++)
-							for (let r = selectedCell[1]; r <= selectedCell[3]; r++)
+					if (!options.hideSelection && lastSelectedCell) {
+						for (let c = lastSelectedCell[0]; c <= lastSelectedCell[2]; c++)
+							for (let r = lastSelectedCell[1]; r <= lastSelectedCell[3]; r++)
 							jexcel.current.highlighted.push(jexcel.current.records[r][c]);
-						selectedCell = undefined;
+						lastSelectedCell = undefined;
 						let x1 = jexcel.current.selectedCell[0];
 						let y1 = jexcel.current.selectedCell[1];
 						let x2 = jexcel.current.selectedCell[2];
@@ -329,7 +343,7 @@ var japaneseCustomEditor = (() => {
 					if (options.hideSelection) {
 						editor.style.display = 'none';
 					} else {
-						jexcel.current.updateSelectionFromCoords(selectedCell[0], selectedCell[1], selectedCell[2], selectedCell[3]);
+						jexcel.current.updateSelectionFromCoords(lastSelectedCell[0], lastSelectedCell[1], lastSelectedCell[2], lastSelectedCell[3]);
 					}
 					break;
 				case 'oncopy':
