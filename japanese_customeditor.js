@@ -29,7 +29,10 @@ var japaneseCustomEditor = (() => {
 	jce.editor = {
 		closeEditor : function(cell, save) {
 			// openEditorで空のセルの場合divを追加しているので余計な改行が付くことがあるので削除する
-			if (editor.innerText == '\n') editor.innerText = '';
+			if (editor.innerHTML.includes('<br>')) {
+				const indexOfBr = editor.innerHTML.indexOf('<br>');
+				editor.innerHTML = editor.innerHTML.substring(0, indexOfBr).replace(' ', '&nbsp;');
+			}
 			let value = save ? editor.innerText : cell.innerText;
 			cell.style.color = '';
 			cell.style.caretColor = 'transparent';
@@ -57,19 +60,20 @@ var japaneseCustomEditor = (() => {
 					let selection = document.getSelection();
 					selection?.setPosition(editor.childNodes[0], editor.innerText.length);
 				}
-				editor.style.alignContent = options.editorVerticalAlign;
 			} else {
 				// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
-				editor.style.display = 'flex';
-				const style = `width:100%;outline:none;caret-color:black;${({
+				const style = `width:1px;outline:none;caret-color:black;${({
+									'start': 'margin-right:auto',
+									'center': 'margin-right:auto;margin-left:auto',
+									'end': 'margin-left:auto',
+								})[options.editorTextAlign]};${({
 									'start': 'margin-bottom:auto',
-									'center': 'margin:auto',
+									'center': 'margin-top:auto;margin-bottom:auto',
 									'end': 'margin-top:auto',
 								})[options.editorVerticalAlign]};`;
 				editor.innerHTML = `<div style="${style}">_</div>`;
 				let height = editor.children[0].clientHeight;
 				editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
-				editor.children[0].focus();
 			}
 			if (event == undefined) {
 				// タッチ操作の場合、選択を解除
@@ -77,6 +81,7 @@ var japaneseCustomEditor = (() => {
 			}
 			editor.style.caretColor = 'black';
 			editor.style.textAlign = options.editorTextAlign;
+			editor.style.alignContent = options.editorVerticalAlign;
 			editor.focus();
 		},
 		getValue : function(cell) {
@@ -154,13 +159,32 @@ var japaneseCustomEditor = (() => {
 					}
 				} else if (e.keyCode == 32) {
 					// space
-					if (!jexcel.current.edition && !options.pressSpaceToEdit) {
-						jexcel.current.openEditor(jexcel.current.records[y][x], false);
+					if (!jexcel.current.edition) {
 						// 既定ではspace押下で編集モードになるだけでspaceが入力されないためプログラムで設定する
-						let selection = document.getSelection();
-						selection?.setPosition(editor.childNodes[0], 1);
-						editor.style.display = 'block';
+						jexcel.current.openEditor(jexcel.current.records[y][x], false);
+						if (options.pressSpaceToEdit) {
+							const style = `width:1px;outline:none;caret-color:black;${({
+												'start': 'margin-right:auto',
+												'center': 'margin-right:auto;margin-left:auto',
+												'end': 'margin-left:auto',
+											})[options.editorTextAlign]};${({
+												'start': 'margin-bottom:auto',
+												'center': 'margin-top:auto;margin-bottom:auto',
+												'end': 'margin-top:auto',
+											})[options.editorVerticalAlign]};`;
+							editor.innerHTML = `<div style="${style}">_</div>`;
+							let height = editor.children[0].clientHeight;
+							editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
+						} else {
+							editor.innerHtml = '&nbsp;';
+							let selection = document.getSelection();
+							selection?.setPosition(editor.childNodes[0], 1);
+						}
 						e.preventDefault();
+					} else if (editor.innerHTML.includes('<div ')) {
+						// 空のセルのvertical-align:centerを実現するために追加したdivを削除する
+						const indexOfBr = editor.innerHTML.indexOf('<div ');
+						editor.innerHTML = editor.innerHTML.substring(0, indexOfBr).replace(' ', '&nbsp;');
 					}
 				} else if ((e.keyCode == 8) ||
 						(e.keyCode >= 48 && e.keyCode <= 57) ||
@@ -169,6 +193,11 @@ var japaneseCustomEditor = (() => {
 						((String.fromCharCode(e.keyCode) == e.key || String.fromCharCode(e.keyCode).toLowerCase() == e.key.toLowerCase()) && jexcel.validLetter(String.fromCharCode(e.keyCode)))) {
 					if (!jexcel.current.edition) {
 						jexcel.current.openEditor(jexcel.current.records[y][x], true);
+					}
+					if (editor.innerHTML.includes('<div ')) {
+						// 空のセルのvertical-align:centerを実現するために追加したdivを削除する
+						const indexOfBr = editor.innerHTML.indexOf('<div ');
+						editor.innerHTML = editor.innerHTML.substring(0, indexOfBr).replace(' ', '&nbsp;');
 					}
 				}
 			}
