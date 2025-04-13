@@ -66,8 +66,6 @@ var japaneseCustomEditor = (() => {
 					}
 				} else {
 					// 空のセルの場合、vertical-align:centerを実現するためにdivを追加する
-					editor.style.display = 'flex';
-  					editor.style.flexDirection = 'column';
 					const style = `width:1px;outline:none;caret-color:black;${({
 										'start': 'margin-right:auto',
 										'center': 'margin-right:auto;margin-left:auto',
@@ -79,7 +77,7 @@ var japaneseCustomEditor = (() => {
 									})[options.editorVerticalAlign]};`;
 					editor.innerHTML = `<div style="${style}">_</div>`;
 					let height = editor.children[0].clientHeight;
-					editor.innerHTML = `<div contenteditable="true" style="${style}height:${options.editorVerticalAlign == 'end' ? 0 : height}px;"></div>`;
+					editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
 				}
 			} else {
 				isEmpty = false;
@@ -174,24 +172,22 @@ var japaneseCustomEditor = (() => {
 						jexcel.current.openEditor(jexcel.current.records[y][x].element, false);
 						if (options.pressSpaceToEdit) {
 							const style = `width:1px;outline:none;caret-color:black;${({
-								'start': 'margin-right:auto',
-								'center': 'margin-right:auto;margin-left:auto',
-								'end': 'margin-left:auto',
-							})[options.editorTextAlign]};${({
-								'start': 'margin-bottom:auto',
-								'center': 'margin-top:auto;margin-bottom:auto',
-								'end': 'margin-top:auto',
-							})[options.editorVerticalAlign]};`;
+												'start': 'margin-right:auto',
+												'center': 'margin-right:auto;margin-left:auto',
+												'end': 'margin-left:auto',
+											})[options.editorTextAlign]};${({
+												'start': 'margin-bottom:auto',
+												'center': 'margin-top:auto;margin-bottom:auto',
+												'end': 'margin-top:auto',
+											})[options.editorVerticalAlign]};`;
 							editor.innerHTML = `<div style="${style}">_</div>`;
 							let height = editor.children[0].clientHeight;
 							editor.innerHTML = `<div contenteditable="true" style="${style}height:${height}px;"></div>`;
-							editor.children[0].focus();
 						} else {
 							editor.innerHTML = '&nbsp;';
 							let selection = document.getSelection();
 							selection?.setPosition(editor.childNodes[0], 1);
 						}
-						editor.style.display = 'block';
 						e.preventDefault();
 					} else if (editor.innerHTML.includes('<div ')) {
 						// 空のセルのvertical-align:centerを実現するために追加したdivを削除する
@@ -203,14 +199,14 @@ var japaneseCustomEditor = (() => {
 						(e.keyCode >= 96 && e.keyCode <= 111) ||
 						(e.keyCode >= 186) ||
 						((String.fromCharCode(e.keyCode) == e.key || String.fromCharCode(e.keyCode).toLowerCase() == e.key.toLowerCase()))) {
+					if (!jexcel.current.edition) {
+						isEmpty = true;
+						jexcel.current.openEditor(jexcel.current.records[y][x].element, true);
+					}
 					if (editor.innerHTML.includes('<div ')) {
 						// 空のセルのvertical-align:centerを実現するために追加したdivを削除する
 						const indexOfBr = editor.innerHTML.indexOf('<div ');
 						editor.innerHTML = editor.innerHTML.substring(0, indexOfBr).replace(' ', '&nbsp;');
-					}
-					if (!jexcel.current.edition) {
-						isEmpty = true;
-						jexcel.current.openEditor(jexcel.current.records[y][x].element, true);
 					}
 				}
 			}
