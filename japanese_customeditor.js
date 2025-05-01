@@ -261,17 +261,6 @@ var japaneseCustomEditor = (() => {
 
 	function setup() {
 		if (typeof jexcel === 'undefined') jexcel = jspreadsheet;
-		// 既定のイベントをカスタマイズ
-		// セルを編集時は既存のcontextmenuイベントを発生させない
-		document.removeEventListener("contextmenu", jexcel.contextMenuControls);
-		document.addEventListener("contextmenu", (e) => {
-			if (jexcel.current) {
-				if (!jexcel.current.edition) {
-					// 編集中でない場合のみ実行
-					jexcel.contextMenuControls(e);
-				}
-			}
-		});
 
 		// 行・列のリサイズ時にエディタの位置を更新
 		let onResizing = function(e) {
