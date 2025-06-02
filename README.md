@@ -29,7 +29,7 @@ jspreadsheet(document.getElementById('spreadsheet'), {
 	}],
 	contextMenu: defaultContextmenu,
 	plugins: {
-		jcePlugin: japaneseCustomEditor.plugin,
+		jcePlugin: japaneseCustomEditor.plugin(),
 	},
 ...
 });
@@ -37,17 +37,17 @@ jspreadsheet(document.getElementById('spreadsheet'), {
 
 3. オプション設定
 
-	いくつかオプションの設定ができる。以下のようにjapaneseCustomEditor.optionsに値を指定する。
+	いくつかオプションの設定ができる。以下のようにjapaneseCustomEditor.pluginの引数を指定する。
 ```javascript
 	plugins: {
-		jcePlugin: japaneseCustomEditor.options({
+		jcePlugin: japaneseCustomEditor.plugin({
 			activeCellBackColor: '#FF08',
 			editFontColor: '#7008',
 			editorTextAlign: 'center',
 			editorVerticalAlign: 'center',
 			pressSpaceToEdit: true,
 			hideSelection: false
-		}).plugin,
+		}),
 	},
 ```
 
