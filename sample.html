@@ -22,7 +22,7 @@
 	/**
 	 * Default context menu items
 	 */
-	 function defaultContextmenu(obj, x, y, e, items, section, a1, a2) {
+	function defaultContextmenu(obj, x, y, e, items, section, a1, a2) {
 		// Reset all default items
 		items = [];
 		
@@ -369,7 +369,7 @@
 		],
 		contextMenu: defaultContextmenu,
 		plugins: {
-			jcePlugin: japaneseCustomEditor.plugin,
+			jcePlugin: japaneseCustomEditor.plugin(),
 		},
 	});
 	</script>
