@@ -17,32 +17,33 @@ Pro版であればこの問題は発生しないが、無料のJspreadsheet CE�
 <script src="./japanese_customeditor.js"></script>
 ```
 
-2. jspreadsheetのcolumnsの定義でeditorにjapaneseCustomEditor.editorを指定する。そのあとjapaneseCustomEditor.setupメソッドを呼び出す。
+2. japaneseCustomEditor.setupメソッドの第一引数にjspreadsheetを指定する。またjspreadsheetのcolumnsの定義でeditorにjapaneseCustomEditor.editorを指定する。
 ```javascript
-jspreadsheet(document.getElementById('spreadsheet'), {
+// カスタムエディタのセットアップ
+japaneseCustomEditor.setup(jspreadsheet(document.getElementById('spreadsheet'), {
 	data: data,
 	columns: [
 		{ type: 'text', title:'A', width:150, editor: japaneseCustomEditor.editor },
 		{ type: 'text', title:'B', width:150, editor: japaneseCustomEditor.editor },
 	],
 ...
-}
-// カスタムエディタのセットアップ
-japaneseCustomEditor.setup();
+}));
 ```
 
 3. オプション設定
 
-	いくつかオプションの設定ができる。以下のようにjapaneseCustomEditor.optionsに値を指定する。
+	いくつかオプションの設定ができる。以下のようにjapaneseCustomEditor.setupメソッドの第二引数に指定する。
 ```javascript
-japaneseCustomEditor.options({
+japaneseCustomEditor.setup(jspreadsheet(document.getElementById('spreadsheet'), {
+...
+}), {
 	activeCellBackColor: '#FF08',
 	editFontColor: '#7008',
 	editorTextAlign: 'center',
 	editorVerticalAlign: 'center',
 	pressSpaceToEdit: true,
 	hideSelection: false
-}).setup();
+});
 ```
 
 | 項目   |      内容      | 設定値 |
