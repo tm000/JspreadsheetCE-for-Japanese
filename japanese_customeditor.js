@@ -354,7 +354,6 @@ var japaneseCustomEditor = (() => {
 					activespread.updateSelectionFromCoords(selected[0], selected[1], selected[2], selected[3]);
 				}
 				activespread = newSpread;
-				console.log(activespread.content.parentNode.id)
 				activeHideSelection = options.hideSelection;
 			}
 
